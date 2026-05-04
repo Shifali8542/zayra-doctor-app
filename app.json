@@ -1,0 +1,31 @@
+{
+ "expo": {
+    "name": "Zayra Doctor",
+    "slug": "zayra-doctor-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "zayradoctor",
+    "icon": "./src/assets/icon.png",
+    "splash": {
+      "image": "./src/assets/icon.png",
+      "backgroundColor": "#EAF4F7",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.zayra.doctor"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0A2540"
+      },
+      "package": "com.zayra.doctor"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

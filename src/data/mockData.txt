@@ -1,0 +1,276 @@
+/**
+ * Single source of mock data for the app.
+ * When real APIs are wired up, delete this file and replace the
+ * imports in `src/features/.../hooks` with API hooks.
+ */
+
+import type {
+  Case,
+  DoctorStats,
+  TimelineEvent,
+  AlynaMessage,
+  PatientContext,
+  PhysiologySnapshot,
+  ImpactStats,
+  LifesavingMoment,
+  DoctorProfile,
+} from '../types';
+
+export const mockDoctorStats: DoctorStats = {
+  avgResponseSec: 38,
+  todayEarningsUsd: 184,
+  confidencePct: 94,
+  streakDays: 23,
+};
+
+export const mockLiveCases: Case[] = [
+  {
+    id: 'c1',
+    caseId: 'ZC-48217',
+    severity: 'CRITICAL',
+    anomaly: 'Sustained ventricular tachycardia',
+    patientSex: 'M',
+    patientAge: 67,
+    patientId: 'P-A1842',
+    hr: 178,
+    hrDelta: 94,
+    spo2: 91,
+    confidence: 96,
+    signalQ: 'Q92',
+    viewing: 3,
+    ageMinutes: 0.4,
+    status: 'live',
+  },
+  {
+    id: 'c2',
+    caseId: 'ZC-48216',
+    severity: 'URGENT',
+    anomaly: 'Atrial fibrillation, new-onset',
+    patientSex: 'F',
+    patientAge: 54,
+    patientId: 'P-K2210',
+    hr: 138,
+    hrDelta: 52,
+    spo2: 96,
+    confidence: 89,
+    signalQ: 'Q88',
+    viewing: 6,
+    ageMinutes: 2,
+    status: 'live',
+    hrv: 24,
+  },
+  {
+    id: 'c3',
+    caseId: 'ZC-48215',
+    severity: 'URGENT',
+    anomaly: 'Supraventricular tachycardia',
+    patientSex: 'M',
+    patientAge: 48,
+    patientId: 'P-S0291',
+    hr: 162,
+    hrDelta: 78,
+    spo2: 95,
+    confidence: 84,
+    signalQ: 'Q87',
+    viewing: 4,
+    ageMinutes: 5,
+    status: 'live',
+  },
+  {
+    id: 'c4',
+    caseId: 'ZC-48214',
+    severity: 'ROUTINE',
+    anomaly: 'PVC burden elevated (18%)',
+    patientSex: 'F',
+    patientAge: 41,
+    patientId: 'P-M3380',
+    hr: 88,
+    hrDelta: 12,
+    spo2: 98,
+    confidence: 76,
+    signalQ: 'Q95',
+    viewing: 12,
+    ageMinutes: 7,
+    status: 'live',
+  },
+  {
+    id: 'c5',
+    caseId: 'ZC-48213',
+    severity: 'URGENT',
+    anomaly: 'Bradycardia with pause',
+    patientSex: 'M',
+    patientAge: 59,
+    patientId: 'P-T1142',
+    hr: 38,
+    hrDelta: -22,
+    spo2: 94,
+    confidence: 91,
+    signalQ: 'Q90',
+    viewing: 14,
+    ageMinutes: 11,
+    status: 'live',
+  },
+];
+
+export const mockClaimedCases: Case[] = [
+  {
+    id: 'cl1',
+    caseId: 'ZC-48190',
+    severity: 'URGENT',
+    anomaly: 'Atrial fibrillation, new-onset',
+    patientSex: 'F',
+    patientAge: 54,
+    patientId: 'P-K2210',
+    hr: 138,
+    hrDelta: 52,
+    spo2: 96,
+    confidence: 89,
+    signalQ: 'Q88',
+    viewing: 6,
+    ageMinutes: 32,
+    status: 'claimed',
+  },
+];
+
+export const mockCompletedCases: Case[] = [
+  {
+    id: 'co1',
+    caseId: 'ZC-48155',
+    severity: 'CRITICAL',
+    anomaly: 'Sustained ventricular tachycardia',
+    patientSex: 'M',
+    patientAge: 67,
+    patientId: 'P-A1842',
+    hr: 178,
+    spo2: 91,
+    confidence: 96,
+    signalQ: 'Q92',
+    viewing: 0,
+    ageMinutes: 240,
+    status: 'completed',
+  },
+  {
+    id: 'co2',
+    caseId: 'ZC-48149',
+    severity: 'ROUTINE',
+    anomaly: 'PVC burden elevated (18%)',
+    patientSex: 'F',
+    patientAge: 41,
+    patientId: 'P-M3380',
+    hr: 88,
+    spo2: 98,
+    confidence: 76,
+    signalQ: 'Q95',
+    viewing: 0,
+    ageMinutes: 360,
+    status: 'completed',
+  },
+];
+
+export const mockTimeline: TimelineEvent[] = [
+  { when: 'NOW', description: 'Anomaly detected — VT pattern, 96% confidence' },
+  { when: '-6H', description: 'Sleep-phase HRV reduction noted' },
+  { when: '-2D', description: 'Routine review, no escalation (Dr. K. Mehta)' },
+  { when: '-9D', description: 'Baseline ambulatory ECG, normal sinus' },
+];
+
+export const mockAlynaConversation: AlynaMessage[] = [
+  {
+    id: 'm1',
+    role: 'assistant',
+    text: "I'm Alyna. I have full context on case ZC-48217. Ask me anything about the rhythm, the patient timeline, or what changed from baseline.",
+    confidence: 96,
+  },
+  {
+    id: 'm2',
+    role: 'user',
+    text: 'Has this happened before in the past 30 days?',
+  },
+  {
+    id: 'm3',
+    role: 'assistant',
+    text: "No prior wide-complex tachycardia events were captured in this patient's 30-day window. There is one episode of brief PVC clustering 9 days ago (T+0:43, 6 beats) which resolved spontaneously.",
+    confidence: 92,
+    tags: ['30-day rhythm log', 'PVC cluster — 9d ago', 'Baseline normal sinus'],
+  },
+];
+
+export const mockAlynaSuggestions: string[] = [
+  'What changed from baseline?',
+  'Did SpO₂ shift with the ECG event?',
+  'Was the patient resting or active?',
+  'How urgent is this pattern?',
+  'Show me the last 24 hours',
+];
+
+export const mockPatientContext: PatientContext = {
+  sex: 'F',
+  age: 54,
+  comorbidities: 'HTN, T2DM (controlled)',
+  adherencePct: 92,
+  activity: 'Sedentary, 4.2k steps/day',
+  sleep: '6h 12m avg · efficiency 78%',
+  dietPattern: 'Moderate sodium, low fiber',
+  smokingAlcohol: 'Never · Occasional',
+};
+
+export const mockPhysiology: PhysiologySnapshot = {
+  pulse: { value: 138, baseline: 84 },
+  hrv: { value: 24, baseline: 48, unit: 'ms' },
+  spo2: { value: 96, baseline: 97 },
+  recovery: 'Low',
+  recoveryNote: 'elevated 36h',
+};
+
+export const mockImpact: ImpactStats = {
+  rankPct: 7,
+  totalDoctors: 12400,
+  reviewed: 1284,
+  escalations: 162,
+  avgResponseSec: 38,
+  streakDays: 23,
+  decisionConfidence: 94,
+  reliability: 99,
+};
+
+export const mockLifesavingMoments: LifesavingMoment[] = [
+  {
+    when: 'TODAY, 14:42',
+    description: 'Escalated VT in 67M — patient stabilized in ER',
+  },
+  {
+    when: 'YESTERDAY',
+    description: 'Caught silent ischemia, referred to cath lab',
+  },
+  {
+    when: '3 DAYS AGO',
+    description: 'Pacemaker referral after Mobitz II detection',
+  },
+];
+
+export const mockDoctorProfile: DoctorProfile = {
+  name: 'Dr. Sanjana Rao',
+  initials: 'SR',
+  specialty: 'Cardiac Electrophysiology',
+  experienceYears: 14,
+  city: 'Bengaluru',
+  licenseVerified: true,
+  languages: ['English', 'Hindi', 'Kannada'],
+  available: true,
+  emergencyOnly: false,
+  workingHours: 'Mon–Sat · 08:00 – 22:00',
+  severityFilters: 'Critical · Urgent · Routine',
+};
+
+export const mockAnomalyDetails = {
+  rate: 178,
+  qrsWidth: 148,
+  qt: 312,
+  qtc: 482,
+  axis: -42,
+  bookmarks: [
+    { label: 'Onset', offset: 'T+0s' },
+    { label: 'Peak', offset: 'T+12s' },
+    { label: 'Resolution', offset: 'T+42s' },
+  ],
+};
