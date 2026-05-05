@@ -35,8 +35,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { stats, profile, liveCases, pendingCount, loading, error, refetch } =
     useDashboard();
 
-  const firstName = profile.name.split(' ').slice(-1)[0];
-
+  const firstName = profile?.name ? profile.name.split(' ').slice(-1)[0] : 'Doctor';
   const goToClaim = (patientId: number) => {
     navigation.navigate('ClaimDetail', { patientId });
   };
@@ -77,13 +76,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         </Text>
 
         <View style={styles.statsCol}>
-          <StatBadge icon="bolt" label="Avg response" value={formatSeconds(stats.avgResponseSec)} />
+          <StatBadge icon="bolt" label="Avg response" value={formatSeconds(stats?.avgResponseSec || 0)} />
           <View style={styles.statGap} />
-          <StatBadge icon="trending-up" label="Today" value={formatCurrency(stats.todayEarningsUsd)} />
+          <StatBadge icon="trending-up" label="Today" value={formatCurrency(stats?.todayEarningsUsd || 0)} />
           <View style={styles.statGap} />
-          <StatBadge icon="activity" label="Confidence" value={formatPct(stats.confidencePct)} />
+          <StatBadge icon="activity" label="Confidence" value={formatPct(stats?.confidencePct || 0)} />
           <View style={styles.statGap} />
-          <StatBadge icon="clock" label="Streak" value={`${stats.streakDays}d`} />
+          <StatBadge icon="clock" label="Streak" value={`${stats?.streakDays || 0}d`} />
         </View>
       </LinearGradient>
 

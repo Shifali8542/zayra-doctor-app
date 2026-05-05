@@ -35,16 +35,18 @@ export const useApi = <T>(
       const data = await fetcherRef.current();
       setState({ data, loading: false, error: null });
     } catch (err) {
+      if (err instanceof Error && err.message === 'No patient id') {
+        setState({ data: null, loading: false, error: null });
+        return;
+      }
       const message =
         err instanceof Error ? err.message : 'Something went wrong';
       setState((s) => ({ ...s, loading: false, error: message }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, deps);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   const setData = useCallback((next: T | null) => {

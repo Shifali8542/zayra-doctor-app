@@ -108,6 +108,7 @@ export interface PatientDetail extends PatientListItem {
   extra_info: Record<string, unknown>;
   ecg_records: ECGRecord[];
   diagnoses: string[];
+  dataset_source_display: string;
 }
 
 export interface Paginated<T> {
@@ -244,7 +245,7 @@ export interface STSummaryRow {
   overall_status: STStatus;
   stemi_suspected: boolean;
   affected_region: STRegion;
-  confidence: number;
+  confidence_score: number;
   analyzed_at: string;
 }
 

@@ -252,7 +252,7 @@ export const patientsApi = {
 
   clinicalInfo: (id: number, recordId?: number) =>
     request<ClinicalInfoResponse>(ENDPOINTS.patientClinicalInfo(id), {
-      query: { record_id: recordId },
+      query: recordId !== undefined ? { record_id: recordId } : undefined,
     }),
 };
 
