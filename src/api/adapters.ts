@@ -92,11 +92,6 @@ const formatDatasetLabel = (
   }
 };
 
-/**
- * Returns true if a string looks like a raw medical code (SNOMED, SCP, ICD)
- * rather than a human-readable name. Codes are typically all-digits or
- * comma-separated digits like "426783006,164865005".
- */
 const looksLikeCode = (s: string | null | undefined): boolean => {
   if (!s) return true;
   const trimmed = s.trim();
