@@ -1,10 +1,9 @@
 import React from 'react';
-import { Text, View, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import { Image, View, KeyboardAvoidingView, Platform, Pressable, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Layout } from '../../../components/Layout/Layout';
 import { Input } from '../../../components/Input/Input';
 import { Button } from '../../../components/Button/Button';
-import { Icon } from '../../../components/Icon';
 import { useLoginForm } from '../../../features/auth/hooks/useAuthForm';
 import { useAppTheme } from '../../../context/ThemeContext';
 import { createLoginScreenStyles } from './LoginScreen.style';
@@ -26,8 +25,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         style={styles.kav}
       >
         <View style={styles.brandRow}>
-          <Icon name="pulse" size={22} color={theme.colors.textPrimary} strokeWidth={2.2} />
-          <Text style={styles.brand}>ZAYRA</Text>
+          <Image source={logo} style={styles.logo} resizeMode="contain" />
         </View>
 
         <LinearGradient

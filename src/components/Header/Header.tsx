@@ -1,11 +1,13 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Icon } from '../Icon';
 import { Avatar } from '../Avatar/Avatar';
 import { createHeaderStyles } from './Header.style';
+
+const logoImage = require('../../assets/icon.png');
 
 interface HeaderProps {
   onProfilePress?: () => void;
@@ -41,8 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.brandWrap}>
-        <Icon name="pulse" size={20} color={theme.colors.textPrimary} strokeWidth={2.2} />
-        <Text style={styles.brandText}>ZAYRA</Text>
+        <Image source={logoImage} style={styles.logoImage} resizeMode="contain" />
       </View>
 
       <View style={styles.actions}>

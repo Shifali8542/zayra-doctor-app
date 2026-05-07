@@ -13,16 +13,9 @@ export const createHeaderStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       alignItems: 'center',
     },
-    brandText: {
-      ...theme.typography.title,
-      color: theme.colors.textPrimary,
-      letterSpacing: 3,
-      marginLeft: theme.spacing.sm,
-      fontWeight: '700',
-    },
-    logo: {
-      width: 110,
-      height: 28,
+    logoImage: {
+      width: 90,
+      height: 36,
     },
     actions: {
       flexDirection: 'row',

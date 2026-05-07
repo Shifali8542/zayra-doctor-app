@@ -48,9 +48,11 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
   const { activeTab, setActiveTab, data, counts, loading, error, refetch } = useCases();
 
   const tabs: { key: CasesTab; label: string; count: number }[] = [
-    { key: 'live', label: 'Live', count: counts.live },
-    { key: 'claimed', label: 'Claimed', count: counts.claimed },
+    { key: 'live',      label: 'Live',      count: counts.live },
+    { key: 'claimed',   label: 'Claimed',   count: counts.claimed },
     { key: 'completed', label: 'Completed', count: counts.completed },
+    { key: 'missed',    label: 'Missed',    count: counts.missed },
+    { key: 'escalated', label: 'Escalated', count: counts.escalated },
   ];
 
   return (
@@ -98,7 +100,7 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
           <Text style={styles.errorText}>Couldn't load cases.</Text>
           <Text style={styles.errorDetail}>{error}</Text>
         </View>
-      ) : activeTab !== 'completed' ? (
+      ) : activeTab === 'live' || activeTab === 'claimed' ? (
         data.length === 0 ? (
           <Text style={styles.empty}>No cases here yet.</Text>
         ) : (
@@ -107,10 +109,10 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
               key={c.id}
               caseItem={c}
               onPress={() =>
-                navigation.navigate('ClaimDetail', { patientId: c.patientId })
+                navigation.navigate('ClaimDetail', { caseId: c.id })
               }
               onClaim={() =>
-                navigation.navigate('ClaimDetail', { patientId: c.patientId })
+                navigation.navigate('ClaimDetail', { caseId: c.id })
               }
             />
           ))

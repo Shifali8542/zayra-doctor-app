@@ -256,7 +256,7 @@ export interface STSummaryResponse {
   results: STSummaryRow[];
 }
 
-/* ── 6. Stats ───────────────────────────────────────────────────── */
+/* 6. Stats  */
 
 export interface DiagnosisSummaryResponse {
   total_patients: number;
@@ -296,8 +296,140 @@ export interface DatasetOverviewResponse {
   grand_total_patients: number;
   grand_total_records: number;
 }
+/* ── 6b. Cases (matches case_reviews serializers.py) ────────────── */
 
-/* ── 7. UI view models ──────────────────────────────────────────── */
+export type CaseStatus = 'live' | 'claimed' | 'completed' | 'missed' | 'escalated';
+export type CaseSeverity = 'normal' | 'routine' | 'urgent' | 'critical';
+
+export interface CaseReview {
+  id: number;
+  status: CaseStatus;
+  severity: CaseSeverity;
+  patient_code: string;
+  age: number | null;
+  sex: string | null;
+  diagnosis: string | null;
+  display_diagnosis: string;
+  diagnosis_class: DiagnosisClass | null;
+  dataset_source: DatasetSource | null;
+  dataset_source_display: string;
+  record_name: string;
+  heart_rate_bpm: number | null;
+  hrv_ms: number | null;
+  confidence_score: number | null;
+  notes: string | null;
+  outcome: string;
+  doctor_name: string | null;
+  created_at: string;
+  claimed_at: string | null;
+  completed_at: string | null;
+}
+
+export interface CaseDetailFull {
+  case: {
+    id: number;
+    status: CaseStatus;
+    severity: CaseSeverity;
+    heart_rate_bpm: number | null;
+    hrv_ms: number | null;
+    confidence_score: number | null;
+    notes: string | null;
+    doctor_name: string | null;
+    created_at: string;
+    claimed_at: string | null;
+    completed_at: string | null;
+  };
+  patient: {
+    id: number;
+    patient_code: string;
+    age: number | null;
+    sex: string | null;
+    diagnosis: string | null;
+    display_diagnosis: string;
+    all_diagnoses: string[];
+    diagnosis_class: DiagnosisClass | null;
+    dataset_source: DatasetSource | null;
+    dataset_source_display: string;
+    extra_info: Record<string, unknown>;
+  };
+  vitals: {
+    heart_rate_bpm: number | null;
+    heart_rate_min: number | null;
+    heart_rate_max: number | null;
+    hrv_ms: number | null;
+    rhythm: string | null;
+    quality_score: number | null;
+    num_beats: number | null;
+  };
+  records: {
+    id: number;
+    record_name: string;
+    sampling_rate: number | null;
+    num_channels: number | null;
+    duration_seconds: number | null;
+    channel_names: string[] | null;
+    is_current: boolean;
+  }[];
+  orinn: {
+    risk_level: RiskLevel | null;
+    risk_score: number | null;
+    narrative: string | null;
+    recommendation: string | null;
+    findings: string[];
+    differential: string[];
+    source: 'cache';
+  } | null;
+  st_analysis: {
+    overall_status: STStatus;
+    stemi_suspected: boolean;
+    affected_region: STRegion;
+    confidence_score: number;
+    overall_status_note: string;
+  } | null;
+  history: {
+    when: string | null;
+    status: CaseStatus;
+    description: string;
+    doctor_name: string | null;
+  }[];
+}
+
+/* ── 6c. Impact (matches case_reviews/impact_views.py) ──────────── */
+
+export interface ImpactStatsResponse {
+  doctor: {
+    id: number;
+    name: string;
+    specialization: string | null;
+    hospital_name: string | null;
+  };
+  reviewed_count: number;
+  escalated_count: number;
+  claimed_count: number;
+  avg_response_sec: number | null;
+  streak_days: number;
+  confidence_score: number | null;
+  reliability_pct: number | null;
+  trust_score: number | null;
+  rank_pct: number;
+  total_doctors: number;
+}
+
+export interface ImpactMoment {
+  id: number;
+  when: string | null;
+  description: string;
+  patient_code: string;
+  severity: CaseSeverity;
+  diagnosis: string | null;
+}
+
+export interface ImpactMomentsResponse {
+  count: number;
+  moments: ImpactMoment[];
+}
+
+/* 7. UI view models */
 
 export type Severity = 'CRITICAL' | 'URGENT' | 'ROUTINE';
 
@@ -408,7 +540,7 @@ export type IconName =
   | 'shield' | 'shield-check' | 'flame' | 'medal' | 'sun' | 'moon'
   | 'arrow-down';
 
-export type CasesTab = 'live' | 'claimed' | 'completed';
+export type CasesTab = 'live' | 'claimed' | 'completed' | 'missed' | 'escalated';
 
 export type AuthStackParamList = {
   Login: undefined;

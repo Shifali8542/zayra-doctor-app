@@ -1,32 +1,32 @@
 import { useMemo } from 'react';
 import { api } from '../../../api/api';
 import {
-  stSummaryToLifesavingMoments,
-  summaryToImpactStats,
+  impactMomentsToViewModel,
+  impactStatsToViewModel,
 } from '../../../api/adapters';
 import { useApi } from '../../../utils/useApi';
 
 export const useImpact = () => {
-  const summaryQ = useApi(() => api.stats.diagnosisSummary(), []);
-  const stQ = useApi(() => api.assessments.stSummary(), []);
+  const statsQ = useApi(() => api.impact.stats(), []);
+  const momentsQ = useApi(() => api.impact.moments(), []);
 
   const stats = useMemo(
-    () => summaryToImpactStats(summaryQ.data, stQ.data),
-    [summaryQ.data, stQ.data],
+    () => impactStatsToViewModel(statsQ.data),
+    [statsQ.data],
   );
 
   const moments = useMemo(
-    () => stSummaryToLifesavingMoments(stQ.data),
-    [stQ.data],
+    () => impactMomentsToViewModel(momentsQ.data),
+    [momentsQ.data],
   );
 
   return {
     stats,
     moments,
-    loading: summaryQ.loading || stQ.loading,
-    error: summaryQ.error || stQ.error,
+    loading: statsQ.loading || momentsQ.loading,
+    error: statsQ.error || momentsQ.error,
     refetch: async () => {
-      await Promise.all([summaryQ.refetch(), stQ.refetch()]);
+      await Promise.all([statsQ.refetch(), momentsQ.refetch()]);
     },
   };
 };

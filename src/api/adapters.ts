@@ -1,11 +1,7 @@
-/**
- * src/api/adapters.ts
- * Pure functions that translate backend payloads into UI view models.
- */
-
 import type {
   AIAnalysisResult,
   AlynaMessageViewModel,
+  CaseReview,
   CaseViewModel,
   ClinicalInfoResponse,
   DiagnosisClass,
@@ -188,6 +184,41 @@ export const stSummaryRowToCase = (
   };
 };
 
+export const caseReviewToViewModel = (c: CaseReview): CaseViewModel => {
+  const severityMap: Record<string, CaseViewModel['severity']> = {
+    critical: 'CRITICAL',
+    urgent: 'URGENT',
+    routine: 'URGENT',
+    normal: 'ROUTINE',
+  };
+  const digits = c.patient_code.replace(/\D/g, '').padStart(5, '0').slice(-5);
+  const ageMinutes = c.created_at
+    ? Math.max(0, Math.round((Date.now() - new Date(c.created_at).getTime()) / 60000))
+    : 0;
+  return {
+    id: `case-${c.id}`,
+    caseId: `ZC-${digits}`,
+    patientId: 0, // not available directly on list; use case.id for actions
+    recordId: undefined,
+    severity: severityMap[c.severity] ?? 'ROUTINE',
+    anomaly: c.display_diagnosis || c.diagnosis || 'Anomaly detected',
+    patientSex: c.sex ? (c.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—',
+    patientAge: c.age ?? 0,
+    patientCode: c.patient_code,
+    hr: c.heart_rate_bpm ?? null,
+    hrDelta: null,
+    spo2: null,
+    confidence: c.confidence_score ?? 0,
+    signalQ: c.confidence_score ? `Q${c.confidence_score}` : 'Q—',
+    viewing: 1,
+    ageMinutes,
+    status: (c.status === 'missed' || c.status === 'escalated' ? 'completed' : c.status) as CaseViewModel['status'],
+    hrv: c.hrv_ms ?? null,
+    datasetSource: c.dataset_source,
+    datasetLabel: c.dataset_source_display || '—',
+  };
+};
+
 export const patientDetailToContext = (
   p: PatientDetail,
 ): PatientContextViewModel => {
@@ -320,18 +351,44 @@ export const summaryToDoctorStats = (
   streakDays: 23,
 });
 
+export const impactStatsToViewModel = (
+  s: import('../types').ImpactStatsResponse | null,
+): ImpactStatsViewModel => ({
+  rankPct: s?.rank_pct ?? 0,
+  totalDoctors: s?.total_doctors ?? 0,
+  reviewed: s?.reviewed_count ?? 0,
+  escalations: s?.escalated_count ?? 0,
+  avgResponseSec: s?.avg_response_sec ?? 0,
+  streakDays: s?.streak_days ?? 0,
+  decisionConfidence: s?.confidence_score ?? 0,
+  reliability: s?.reliability_pct ?? 0,
+});
+
+export const impactMomentsToViewModel = (
+  response: import('../types').ImpactMomentsResponse | null,
+): LifesavingMomentViewModel[] => {
+  if (!response) return [];
+  return response.moments.map((m) => ({
+    when: m.when
+      ? new Date(m.when).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
+      : '—',
+    description: m.description,
+  }));
+};
+
+// Keep for any existing callers that haven't been migrated yet
 export const summaryToImpactStats = (
   s: DiagnosisSummaryResponse | null,
   st?: STSummaryResponse | null,
 ): ImpactStatsViewModel => ({
-  rankPct: 7,
+  rankPct: 0,
   totalDoctors: Math.max(1, s?.total_patients ?? 1),
   reviewed: s?.total_records ?? 0,
   escalations: st?.stemi_count ?? 0,
-  avgResponseSec: 38,
-  streakDays: 23,
-  decisionConfidence: 94,
-  reliability: 99,
+  avgResponseSec: 0,
+  streakDays: 0,
+  decisionConfidence: 0,
+  reliability: 0,
 });
 
 export const stSummaryToLifesavingMoments = (

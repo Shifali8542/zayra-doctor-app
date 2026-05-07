@@ -17,8 +17,8 @@ export const createCasesScreenStyles = (theme: AppTheme) =>
     tab: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.xl,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
       borderRadius: theme.radii.pill,
     },
     tabActive: {
@@ -27,7 +27,7 @@ export const createCasesScreenStyles = (theme: AppTheme) =>
     tabLabel: {
       ...theme.typography.bodyStrong,
       color: theme.colors.textPrimary,
-      fontSize: theme.fonts.sizes.lg,
+      fontSize: theme.fonts.sizes.sm,
     },
     tabLabelActive: {
       color: theme.colors.textOnDark,

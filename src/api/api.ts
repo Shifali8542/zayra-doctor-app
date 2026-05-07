@@ -1,21 +1,14 @@
-/**
- * src/api/api.ts
- * ==================================================================
- * SINGLE SOURCE OF TRUTH for every backend HTTP call.
- *
- * Backend: Django REST Framework, JWT auth, base path `/api/v1/`.
- * Auth tokens are kept in-memory by `setAuthTokens()` and attached
- * automatically to every request.
- * ==================================================================
- */
-
 import type {
   AIAnalysisEnvelope,
   AuthTokens,
+  CaseDetailFull,
+  CaseReview,
   ClinicalInfoResponse,
   DatasetOverviewResponse,
   DiagnosisSummaryResponse,
   DoctorRegistrationRequest,
+  ImpactMomentsResponse,
+  ImpactStatsResponse,
   LoginRequest,
   LoginResponse,
   Paginated,
@@ -60,11 +53,22 @@ export const ENDPOINTS = {
   stSummary: '/assessments/st-elevation/summary/',
   stAnalyze: (id: number) => `/assessments/st-elevation/${id}/analyze/`,
   stResult: (id: number) => `/assessments/st-elevation/${id}/result/`,
+
+  // Cases
+  cases: '/cases/',
+  caseDetail: (id: number) => `/cases/${id}/`,
+  caseDetailFull: (id: number) => `/cases/${id}/detail/`,
+  caseClaim: (id: number) => `/cases/${id}/claim/`,
+  caseComplete: (id: number) => `/cases/${id}/complete/`,
+  caseEscalate: (id: number) => `/cases/${id}/escalate/`,
+  caseAnalyze: (id: number) => `/cases/${id}/analyze/`,
+
+  // Impact
+  impactStats: '/impact/stats/',
+  impactMoments: '/impact/moments/',
 } as const;
 
-/* ──────────────────────────────────────────────────────────────────
- * Token store (in-memory). Replace with persistent storage later.
- * ────────────────────────────────────────────────────────────────── */
+ // Token store (in-memory). Replace with persistent storage later.
 
 let _tokens: AuthTokens | null = null;
 
@@ -290,10 +294,63 @@ export const assessmentsApi = {
     }),
 };
 
-/* ──────────────────────────────────────────────────────────────────
- * STATS API
- * ────────────────────────────────────────────────────────────────── */
 
+ // CASES API
+export interface CaseListQuery {
+  status?: 'live' | 'claimed' | 'completed' | 'missed' | 'escalated';
+  severity?: 'normal' | 'routine' | 'urgent' | 'critical';
+  mine?: boolean;
+  search?: string;
+  page?: number;
+  page_size?: number;
+  [key: string]: string | number | boolean | undefined | null;
+}
+
+export const casesApi = {
+  list: (query?: CaseListQuery) =>
+    request<Paginated<CaseReview>>(ENDPOINTS.cases, { query }),
+
+  detail: (id: number) =>
+    request<CaseReview>(ENDPOINTS.caseDetail(id)),
+
+  detailFull: (id: number) =>
+    request<CaseDetailFull>(ENDPOINTS.caseDetailFull(id)),
+
+  claim: (id: number) =>
+    request<CaseReview>(ENDPOINTS.caseClaim(id), { method: 'POST' }),
+
+  complete: (id: number, notes?: string) =>
+    request<CaseReview>(ENDPOINTS.caseComplete(id), {
+      method: 'POST',
+      body: notes ? { notes } : undefined,
+    }),
+
+  escalate: (id: number, notes?: string) =>
+    request<CaseReview>(ENDPOINTS.caseEscalate(id), {
+      method: 'POST',
+      body: notes ? { notes } : undefined,
+    }),
+
+  analyze: (id: number) =>
+    request<{
+      message: string;
+      risk_level: string | null;
+      risk_score: number | null;
+      narrative: string | null;
+      recommendation: string | null;
+      findings: string[];
+      differential: string[];
+    }>(ENDPOINTS.caseAnalyze(id), { method: 'POST' }),
+};
+
+
+ // IMPACT API
+export const impactApi = {
+  stats: () => request<ImpactStatsResponse>(ENDPOINTS.impactStats),
+  moments: () => request<ImpactMomentsResponse>(ENDPOINTS.impactMoments),
+};
+
+ // STATS API
 export const statsApi = {
   diagnosisSummary: () =>
     request<DiagnosisSummaryResponse>(ENDPOINTS.patientSummary),
@@ -304,14 +361,14 @@ export const statsApi = {
     request<DatasetOverviewResponse>(ENDPOINTS.patientDatasetOverview),
 };
 
-/* ──────────────────────────────────────────────────────────────────
- * Default export = entire API surface
- * ────────────────────────────────────────────────────────────────── */
+ // Default export
 
 export const api = {
   auth: authApi,
   patients: patientsApi,
   assessments: assessmentsApi,
+  cases: casesApi,
+  impact: impactApi,
   stats: statsApi,
   setAuthTokens,
   getAccessToken,

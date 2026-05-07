@@ -9,16 +9,9 @@ export const createLoginScreenStyles = (theme: AppTheme) =>
       alignItems: 'center',
       paddingVertical: theme.spacing.lg,
     },
-    brand: {
-      ...theme.typography.title,
-      color: theme.colors.textPrimary,
-      letterSpacing: 3,
-      marginLeft: theme.spacing.sm,
-      fontWeight: '700',
-    },
     logo: {
-      width: 130,
-      height: 32,
+      width: 56,
+      height: 56,
     },
     hero: {
       borderRadius: theme.radii.xxl,

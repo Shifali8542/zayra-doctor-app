@@ -84,7 +84,8 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
   const patientId: number | undefined = route?.params?.patientId;
   const { caseItem, timeline, patientContext, physiology, loading, error } = useClaim(patientId);
 
-  const ecgWidth = Math.min(getMaxContentWidth(deviceType), 600) - 80;
+  const { width: screenWidth } = useResponsive();
+  const ecgWidth = screenWidth - 80;
 
   return (
     <Layout scroll padded edges={['top']} bottomInsetExtra={32}>
@@ -185,11 +186,11 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
             </View>
 
             <EcgWaveform
-              width={ecgWidth > 0 ? ecgWidth : 280}
-              height={160}
+              width={ecgWidth > 60 ? ecgWidth : screenWidth - 80}
+              height={120}
               severity={caseItem.severity === 'CRITICAL' ? 'critical' : caseItem.severity === 'URGENT' ? 'urgent' : 'normal'}
               seed={43}
-              style={{ marginTop: theme.spacing.lg }}
+              style={{ marginTop: theme.spacing.lg, alignSelf: 'center' }}
             />
             <View style={styles.captureMetaRow}>
               <Text style={styles.captureMeta}>Lead II · 25mm/s · 10mm/mV</Text>
