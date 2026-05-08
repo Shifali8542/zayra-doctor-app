@@ -109,10 +109,10 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
               key={c.id}
               caseItem={c}
               onPress={() =>
-                navigation.navigate('ClaimDetail', { caseId: c.id })
+                navigation.navigate('ClaimDetail', { caseId: c.patientId })
               }
               onClaim={() =>
-                navigation.navigate('ClaimDetail', { caseId: c.id })
+                navigation.navigate('ClaimDetail', { caseId: c.patientId })
               }
             />
           ))

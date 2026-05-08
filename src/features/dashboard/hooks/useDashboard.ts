@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { api } from '../../../api/api';
 import {
-  patientListItemToCase,
+  caseReviewToViewModel,
   summaryToDoctorStats,
   userProfileToDoctorView,
 } from '../../../api/adapters';
@@ -10,11 +10,10 @@ import { useApi } from '../../../utils/useApi';
 export const useDashboard = () => {
   const profileQ = useApi(() => api.auth.profile(), []);
   const summaryQ = useApi(() => api.stats.diagnosisSummary(), []);
-  const patientsQ = useApi(
-    () => api.patients.list({ diagnosis: 'mi', page_size: 5 }),
+  const casesQ = useApi(
+    () => api.cases.list({ status: 'live', page_size: 5 }),
     [],
   );
-
   const stats = useMemo(
     () => summaryToDoctorStats(summaryQ.data),
     [summaryQ.data],
@@ -41,22 +40,22 @@ export const useDashboard = () => {
   );
 
   const liveCases = useMemo(() => {
-    const rows = patientsQ.data?.results ?? [];
-    return rows.map((p) => patientListItemToCase(p, { status: 'live' }));
-  }, [patientsQ.data]);
+    const rows = casesQ.data?.results ?? [];
+    return rows.map(caseReviewToViewModel);
+  }, [casesQ.data]);
 
-  const loading = profileQ.loading || summaryQ.loading || patientsQ.loading;
-  const error = profileQ.error || summaryQ.error || patientsQ.error;
+  const loading = profileQ.loading || summaryQ.loading || casesQ.loading;
+  const error = profileQ.error || summaryQ.error || casesQ.error;
 
   const refetch = async () => {
-    await Promise.all([profileQ.refetch(), summaryQ.refetch(), patientsQ.refetch()]);
+    await Promise.all([profileQ.refetch(), summaryQ.refetch(), casesQ.refetch()]);
   };
 
   return {
     stats,
     profile,
     liveCases,
-    pendingCount: summaryQ.data?.diagnosis_class_stats?.mi ?? liveCases.length,
+    pendingCount: casesQ.data?.count ?? liveCases.length,
     loading,
     error,
     refetch,

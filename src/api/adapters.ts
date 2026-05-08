@@ -198,7 +198,7 @@ export const caseReviewToViewModel = (c: CaseReview): CaseViewModel => {
   return {
     id: `case-${c.id}`,
     caseId: `ZC-${digits}`,
-    patientId: 0, // not available directly on list; use case.id for actions
+    patientId: c.id,
     recordId: undefined,
     severity: severityMap[c.severity] ?? 'ROUTINE',
     anomaly: c.display_diagnosis || c.diagnosis || 'Anomaly detected',
@@ -263,24 +263,38 @@ export const clinicalInfoToPhysiology = (
 export const aiAnalysisToTimeline = (
   ai?: AIAnalysisResult | null,
 ): TimelineEventViewModel[] => {
+  // kept as fallback only — real data comes from caseHistoryToTimeline
   const events: TimelineEventViewModel[] = [];
-  if (ai) {
-    const conf = ai.risk_score ?? 0;
-    events.push({
-      when: 'NOW',
-      description: `Anomaly detected — ${
-        ai.risk_level ?? 'Risk'
-      } pattern, ${conf}% confidence`,
-    });
-    (ai.findings ?? []).slice(0, 3).forEach((f, i) => {
+  if (ai?.findings?.length) {
+    (ai.findings).slice(0, 3).forEach((f, i) => {
       events.push({ when: `-${(i + 1) * 6}H`, description: f });
     });
   }
-  events.push({
-    when: '-9D',
-    description: 'Baseline ambulatory ECG, normal sinus',
-  });
   return events;
+};
+
+// Maps real backend history[] (from /cases/:id/detail/) → timeline rows
+export const caseHistoryToTimeline = (
+  history: import('../types').CaseDetailFull['history'],
+): TimelineEventViewModel[] => {
+  if (!history?.length) return [];
+  return history.map((h) => ({
+    when: h.when
+      ? new Date(h.when).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric',
+        })
+      : '—',
+    description: h.description,
+    recordId:       (h as any).record_id       ?? undefined,
+    recordName:     (h as any).record_name     ?? undefined,
+    status:         h.status,
+    severity:       (h as any).severity        ?? undefined,
+    heartRateBpm:   (h as any).heart_rate_bpm  ?? null,
+    hrvMs:          (h as any).hrv_ms          ?? null,
+    stStatus:       (h as any).st_status       ?? null,
+    stemiSuspected: (h as any).stemi_suspected ?? null,
+    doctorName:     h.doctor_name              ?? null,
+  }));
 };
 
 export const aiAnalysisToAlynaSeed = (

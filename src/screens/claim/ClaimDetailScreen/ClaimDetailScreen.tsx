@@ -15,7 +15,6 @@ import { createClaimDetailScreenStyles } from './ClaimDetailScreen.style';
 import { formatRelativeMinutes } from '../../../utils/format';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useResponsive } from '../../../utils/useResponsive';
-import { getMaxContentWidth } from '../../../utils/responsive';
 
 interface ClaimDetailScreenProps {
   navigation: any;
@@ -79,10 +78,15 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
   route,
 }) => {
   const theme = useAppTheme();
-  const { deviceType } = useResponsive();
   const styles = createClaimDetailScreenStyles(theme);
-  const patientId: number | undefined = route?.params?.patientId;
-  const { caseItem, timeline, patientContext, physiology, loading, error } = useClaim(patientId);
+  const caseId: number | undefined = route?.params?.caseId ?? route?.params?.patientId;
+  const {
+    caseItem, timeline, ecgRecords, patientContext,
+    physiology, selectedRecordId, setSelectedRecordId,
+    aiAnalysis, records, loading, error,
+  } = useClaim(caseId);
+
+  const patientId = caseItem.patientId;
 
   const { width: screenWidth } = useResponsive();
   const ecgWidth = screenWidth - 80;
@@ -217,14 +221,137 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
             </View>
           </Card>
 
+          {/* ── ECG record switcher (only shown when patient has >1 record) ── */}
+          {records.length > 1 && (
+            <Card style={styles.section}>
+              <Text style={styles.sectionTitle}>ECG records</Text>
+              <Text style={styles.sectionMeta}>{records.length} recordings — tap to switch</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                {records.map((r) => {
+                  const isActive = selectedRecordId
+                    ? selectedRecordId === r.id
+                    : r.is_current;
+                  return (
+                    <Pressable
+                      key={r.id}
+                      onPress={() => setSelectedRecordId(r.id)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 7,
+                        borderRadius: 20,
+                        backgroundColor: isActive
+                          ? theme.colors.primary
+                          : theme.colors.surface,
+                        borderWidth: 1,
+                        borderColor: isActive
+                          ? theme.colors.primary
+                          : theme.colors.border,
+                      }}
+                    >
+                      <Text style={{
+                        fontSize: 12,
+                        fontWeight: isActive ? '600' : '400',
+                        color: isActive
+                          ? theme.colors.textOnDark
+                          : theme.colors.textSecondary,
+                      }}>
+                        {r.record_name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </Card>
+          )}
+
+          {/* ── History timeline — per ECG record breakdown ── */}
           <Card style={styles.section}>
             <Text style={styles.sectionTitle}>History timeline</Text>
+            <Text style={styles.sectionMeta}>
+              {ecgRecords.length > 0
+                ? `${ecgRecords.length} ECG records — differences per recording`
+                : 'Case review history'}
+            </Text>
+
+            {/* Per-record comparison table */}
+            {ecgRecords.length > 1 && (
+              <View style={{ marginTop: 12, marginBottom: 8 }}>
+                {/* Table header */}
+                <View style={{
+                  flexDirection: 'row',
+                  paddingVertical: 6,
+                  borderBottomWidth: 1,
+                  borderColor: theme.colors.border,
+                }}>
+                  {['Record', 'HR', 'HRV', 'ST Status', 'STEMI'].map((h) => (
+                    <Text key={h} style={{
+                      flex: h === 'ST Status' ? 2 : 1,
+                      fontSize: 10,
+                      color: theme.colors.textSecondary,
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.5,
+                    }}>{h}</Text>
+                  ))}
+                </View>
+                {/* Table rows */}
+                {ecgRecords.map((r) => (
+                  <Pressable
+                    key={r.id}
+                    onPress={() => setSelectedRecordId(r.id)}
+                    style={({ pressed }) => ({
+                      flexDirection: 'row',
+                      paddingVertical: 10,
+                      borderBottomWidth: 1,
+                      borderColor: theme.colors.border,
+                      opacity: pressed ? 0.7 : 1,
+                      backgroundColor: selectedRecordId === r.id
+                        ? theme.colors.surface
+                        : 'transparent',
+                    })}
+                  >
+                    <Text style={{ flex: 1, fontSize: 12, color: theme.colors.textPrimary, fontWeight: '500' }}>
+                      {r.record_name}
+                    </Text>
+                    <Text style={{ flex: 1, fontSize: 12, color: theme.colors.textPrimary }}>
+                      {r.heart_rate_bpm ? `${Math.round(r.heart_rate_bpm)}` : '—'}
+                    </Text>
+                    <Text style={{ flex: 1, fontSize: 12, color: theme.colors.textPrimary }}>
+                      {r.hrv_ms ? `${Math.round(r.hrv_ms)}ms` : '—'}
+                    </Text>
+                    <Text style={{
+                      flex: 2, fontSize: 11,
+                      color: r.st_status?.includes('STEMI') || r.st_status?.includes('Critical')
+                        ? theme.colors.danger
+                        : r.st_status === 'Normal'
+                          ? theme.colors.success
+                          : theme.colors.textPrimary,
+                    }}>
+                      {r.st_status ?? '—'}
+                    </Text>
+                    <Text style={{
+                      flex: 1, fontSize: 12,
+                      color: r.stemi_suspected ? theme.colors.danger : theme.colors.success,
+                      fontWeight: '600',
+                    }}>
+                      {r.stemi_suspected === null ? '—' : r.stemi_suspected ? 'YES' : 'No'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {/* Standard timeline events */}
             <View style={styles.timelineWrap}>
               {timeline.map((t, i) => (
                 <TimelineItem
                   key={`${t.when}-${i}`}
                   when={t.when}
-                  description={t.description}
+                  description={
+                    t.recordName
+                      ? `[${t.recordName}] ${t.description}${t.heartRateBpm ? ` · HR ${Math.round(t.heartRateBpm)} bpm` : ''}${t.stStatus ? ` · ST: ${t.stStatus}` : ''}`
+                      : t.description
+                  }
                   isFirst={i === 0}
                   isLast={i === timeline.length - 1}
                 />

@@ -68,7 +68,7 @@ export const ENDPOINTS = {
   impactMoments: '/impact/moments/',
 } as const;
 
- // Token store (in-memory). Replace with persistent storage later.
+// Token store (in-memory). Replace with persistent storage later.
 
 let _tokens: AuthTokens | null = null;
 
@@ -223,7 +223,7 @@ export const authApi = {
 };
 
 
- // PATIENT API
+// PATIENT API
 
 export interface PatientListQuery {
   search?: string;
@@ -242,7 +242,7 @@ export const patientsApi = {
     request<PatientDetail>(ENDPOINTS.patientDetail(id)),
 
   records: (id: number) =>
-    request<{ patient_code: string; count: number; records: unknown[] }>(
+    request<{ patient_code: string; count: number; records: import('../types').ECGRecord[] }>(
       ENDPOINTS.patientRecords(id),
     ),
 
@@ -254,15 +254,19 @@ export const patientsApi = {
       query: opts,
     }),
 
-  clinicalInfo: (id: number, recordId?: number) =>
+  clinicalInfo: (id: number, opts?: { record_id?: number }) =>
     request<ClinicalInfoResponse>(ENDPOINTS.patientClinicalInfo(id), {
-      query: recordId !== undefined ? { record_id: recordId } : undefined,
+      query: opts,
     }),
+
+  recordsHistory: (id: number) =>
+    request<import('../types').PatientRecordsResponse>(
+      ENDPOINTS.patientRecords(id),
+      { query: { history: 'true' } },
+    ),
 };
 
-/* ──────────────────────────────────────────────────────────────────
- * CARDIO ASSESSMENT API
- * ────────────────────────────────────────────────────────────────── */
+// CARDIO ASSESSMENT API
 
 export const assessmentsApi = {
   aiAnalysis: (id: number, opts?: { record_id?: number; refresh?: boolean }) =>
@@ -295,7 +299,7 @@ export const assessmentsApi = {
 };
 
 
- // CASES API
+// CASES API
 export interface CaseListQuery {
   status?: 'live' | 'claimed' | 'completed' | 'missed' | 'escalated';
   severity?: 'normal' | 'routine' | 'urgent' | 'critical';
@@ -344,13 +348,13 @@ export const casesApi = {
 };
 
 
- // IMPACT API
+// IMPACT API
 export const impactApi = {
   stats: () => request<ImpactStatsResponse>(ENDPOINTS.impactStats),
   moments: () => request<ImpactMomentsResponse>(ENDPOINTS.impactMoments),
 };
 
- // STATS API
+// STATS API
 export const statsApi = {
   diagnosisSummary: () =>
     request<DiagnosisSummaryResponse>(ENDPOINTS.patientSummary),
@@ -361,7 +365,7 @@ export const statsApi = {
     request<DatasetOverviewResponse>(ENDPOINTS.patientDatasetOverview),
 };
 
- // Default export
+// Default export
 
 export const api = {
   auth: authApi,

@@ -389,8 +389,15 @@ export interface CaseDetailFull {
   history: {
     when: string | null;
     status: CaseStatus;
+    severity: string;
     description: string;
     doctor_name: string | null;
+    record_id: number;
+    record_name: string;
+    heart_rate_bpm: number | null;
+    hrv_ms: number | null;
+    st_status: string | null;
+    stemi_suspected: boolean | null;
   }[];
 }
 
@@ -496,6 +503,42 @@ export interface DoctorProfileViewModel {
 export interface TimelineEventViewModel {
   when: string;
   description: string;
+  // enriched fields from backend history[]
+  recordId?: number;
+  recordName?: string;
+  status?: string;
+  severity?: string;
+  heartRateBpm?: number | null;
+  hrvMs?: number | null;
+  stStatus?: string | null;
+  stemiSuspected?: boolean | null;
+  doctorName?: string | null;
+}
+
+// Per-record enriched history row
+export interface ECGRecordHistoryItem {
+  id: number;
+  record_name: string;
+  sampling_rate: number | null;
+  num_channels: number | null;
+  channel_names: string[] | null;
+  num_samples: number | null;
+  duration_seconds: number | null;
+  split: string | null;
+  st_status: string | null;
+  stemi_suspected: boolean | null;
+  affected_region: string | null;
+  st_confidence: number | null;
+  ai_risk_level: string | null;
+  ai_risk_score: number | null;
+  heart_rate_bpm: number | null;
+  hrv_ms: number | null;
+}
+
+export interface PatientRecordsResponse {
+  patient_code: string;
+  count: number;
+  records: ECGRecordHistoryItem[];
 }
 
 export interface AlynaMessageViewModel {

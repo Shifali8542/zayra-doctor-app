@@ -36,8 +36,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     useDashboard();
 
   const firstName = profile?.name ? profile.name.split(' ').slice(-1)[0] : 'Doctor';
-  const goToClaim = (patientId: number) => {
-    navigation.navigate('ClaimDetail', { patientId });
+  const goToClaim = (caseId: number) => {
+    navigation.navigate('ClaimDetail', { caseId });
   };
 
   return (
