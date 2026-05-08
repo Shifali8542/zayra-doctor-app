@@ -35,9 +35,9 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
   const stripWidth = Math.max(220, containerW * zoom);
   const stripHeight = 130;
 
-  const sev = caseItem.severity === 'CRITICAL'
+  const sev = caseItem?.severity === 'CRITICAL'
     ? 'critical'
-    : caseItem.severity === 'URGENT'
+    : caseItem?.severity === 'URGENT'
       ? 'urgent'
       : 'normal';
 
@@ -45,10 +45,10 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
     <Layout scroll padded edges={['top']} bottomInsetExtra={92}>
       <Header onProfilePress={() => navigation.navigate('Profile')} />
 
-      <View style={styles.titleWrap}>
+     <View style={styles.titleWrap}>
         <Text style={styles.title}>TraceView</Text>
         <Text style={styles.subtitle}>
-          {caseItem.datasetLabel} · Lead II · 25 mm/s · 10 mm/mV · {caseItem.signalQ}
+          {caseItem?.datasetLabel ?? '—'} · Lead II · 25 mm/s · 10 mm/mV · {caseItem?.signalQ ?? '—'}
         </Text>
       </View>
 

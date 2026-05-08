@@ -3,13 +3,7 @@ import { api } from '../../../api/api';
 import { aiAnalysisToAlynaSeed } from '../../../api/adapters';
 import type { AlynaMessageViewModel } from '../../../types';
 
-const DEFAULT_SUGGESTIONS = [
-  'What changed from baseline?',
-  'Did SpO₂ shift with the ECG event?',
-  'Was the patient resting or active?',
-  'How urgent is this pattern?',
-  'Show me the last 24 hours',
-];
+const DEFAULT_SUGGESTIONS: string[] = [];
 
 export const useAlyna = (explicitPatientId?: number) => {
   const [messages, setMessages] = useState<AlynaMessageViewModel[]>([]);

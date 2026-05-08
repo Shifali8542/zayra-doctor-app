@@ -23,19 +23,7 @@ export const useDashboard = () => {
     () =>
       profileQ.data
         ? userProfileToDoctorView(profileQ.data)
-        : {
-            name: 'Doctor',
-            initials: 'DR',
-            specialty: 'Cardiology',
-            experienceYears: 0,
-            city: '',
-            licenseVerified: false,
-            languages: [],
-            available: true,
-            emergencyOnly: false,
-            workingHours: '',
-            severityFilters: '',
-          },
+        : null,
     [profileQ.data],
   );
 

@@ -86,7 +86,7 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
     aiAnalysis, records, loading, error,
   } = useClaim(caseId);
 
-  const patientId = caseItem.patientId;
+  const patientId = caseItem?.patientId;
 
   const { width: screenWidth } = useResponsive();
   const ecgWidth = screenWidth - 80;
@@ -103,7 +103,7 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
         <Text style={styles.backText}>Back to PulseDesk</Text>
       </Pressable>
 
-      {loading && caseItem.patientCode === '' ? (
+      {loading || !caseItem ? (
         <View style={{ paddingVertical: 64, alignItems: 'center' }}>
           <ActivityIndicator color={theme.colors.primary} />
           <Text style={{ marginTop: 12, color: theme.colors.textSecondary }}>
@@ -359,53 +359,56 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
             </View>
           </Card>
 
-          <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Patient context</Text>
-            <View style={styles.kvList}>
-              <Row label="Sex / Age" value={`${patientContext.sex} · ${patientContext.age}y`} />
-              <Row label="Comorbidities" value={patientContext.comorbidities} />
-              <Row label="Adherence" value={`${patientContext.adherencePct}%`} />
-              <Row label="Activity" value={patientContext.activity} />
-              <Row label="Sleep" value={patientContext.sleep} />
-              <Row label="Diet pattern" value={patientContext.dietPattern} />
-              <Row label="Smoking / Alcohol" value={patientContext.smokingAlcohol} last />
-            </View>
-          </Card>
-
-          <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Physiology snapshot</Text>
-            <View style={styles.physRow}>
-              <View style={styles.physLeft}>
-                <Text style={styles.physLabel}>Pulse</Text>
-                <Text style={styles.physBaseline}>vs {physiology.pulse.baseline} baseline</Text>
+          {patientContext && (
+            <Card style={styles.section}>
+              <Text style={styles.sectionTitle}>Patient context</Text>
+              <View style={styles.kvList}>
+                <Row label="Sex / Age" value={`${patientContext.sex} · ${patientContext.age}y`} />
+                <Row label="Comorbidities" value={patientContext.comorbidities} />
+                <Row label="Adherence" value={`${patientContext.adherencePct}%`} />
+                <Row label="Activity" value={patientContext.activity} />
+                <Row label="Sleep" value={patientContext.sleep} />
+                <Row label="Diet pattern" value={patientContext.dietPattern} />
+                <Row label="Smoking / Alcohol" value={patientContext.smokingAlcohol} last />
               </View>
-              <Text style={styles.physValue}>{physiology.pulse.value}</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.physRow}>
-              <View style={styles.physLeft}>
-                <Text style={styles.physLabel}>HRV</Text>
-                <Text style={styles.physBaseline}>vs {physiology.hrv.baseline} baseline</Text>
+            </Card>
+          )}
+          {physiology && (
+            <Card style={styles.section}>
+              <Text style={styles.sectionTitle}>Physiology snapshot</Text>
+              <View style={styles.physRow}>
+                <View style={styles.physLeft}>
+                  <Text style={styles.physLabel}>Pulse</Text>
+                  <Text style={styles.physBaseline}>vs {physiology.pulse.baseline} baseline</Text>
+                </View>
+                <Text style={styles.physValue}>{physiology.pulse.value}</Text>
               </View>
-              <Text style={styles.physValue}>{physiology.hrv.value}{physiology.hrv.unit}</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.physRow}>
-              <View style={styles.physLeft}>
-                <Text style={styles.physLabel}>SpO₂</Text>
-                <Text style={styles.physBaseline}>vs {physiology.spo2.baseline}% baseline</Text>
+              <View style={styles.divider} />
+              <View style={styles.physRow}>
+                <View style={styles.physLeft}>
+                  <Text style={styles.physLabel}>HRV</Text>
+                  <Text style={styles.physBaseline}>vs {physiology.hrv.baseline} baseline</Text>
+                </View>
+                <Text style={styles.physValue}>{physiology.hrv.value}{physiology.hrv.unit}</Text>
               </View>
-              <Text style={styles.physValue}>{physiology.spo2.value}%</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.physRow}>
-              <View style={styles.physLeft}>
-                <Text style={styles.physLabel}>Recovery</Text>
-                <Text style={styles.physBaseline}>{physiology.recoveryNote}</Text>
+              <View style={styles.divider} />
+              <View style={styles.physRow}>
+                <View style={styles.physLeft}>
+                  <Text style={styles.physLabel}>SpO₂</Text>
+                  <Text style={styles.physBaseline}>vs {physiology.spo2.baseline}% baseline</Text>
+                </View>
+                <Text style={styles.physValue}>{physiology.spo2.value}%</Text>
               </View>
-              <Text style={styles.physValue}>{physiology.recovery}</Text>
-            </View>
-          </Card>
+              <View style={styles.divider} />
+              <View style={styles.physRow}>
+                <View style={styles.physLeft}>
+                  <Text style={styles.physLabel}>Recovery</Text>
+                  <Text style={styles.physBaseline}>{physiology.recoveryNote}</Text>
+                </View>
+                <Text style={styles.physValue}>{physiology.recovery}</Text>
+              </View>
+            </Card>
+          )}
 
           <LinearGradient
             colors={[theme.colors.heroGradientFrom, theme.colors.heroGradientMid, theme.colors.heroGradientTo]}

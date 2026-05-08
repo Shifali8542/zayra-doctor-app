@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { api } from '../../../api/api';
 import { useApi } from '../../../utils/useApi';
+import type { Severity } from '../../../types';
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 4;
@@ -9,9 +10,6 @@ export const useTraceView = (explicitPatientId?: number) => {
   const [zoom, setZoom] = useState(1);
   const [annotation, setAnnotation] = useState('');
 
-  // If the screen wasn't given a patientId (e.g. user tapped the bottom tab
-  // directly), fall back to the first patient in the live list so the screen
-  // is still useful instead of showing an error.
   const fallbackQ = useApi(
     () =>
       explicitPatientId
@@ -59,16 +57,9 @@ export const useTraceView = (explicitPatientId?: number) => {
     setAnnotation('');
   }, []);
 
-  const caseItem = useMemo(() => {
+  const caseItem: { caseId: string; datasetLabel: string; signalQ: string; severity: Severity } | null = useMemo(() => {
     const p = detailQ.data;
-    if (!p) {
-      return {
-        caseId: 'ZC-—',
-        datasetLabel: '—',
-        signalQ: 'Q—',
-        severity: 'ROUTINE' as const,
-      };
-    }
+    if (!p) return null;
     const code = p.patient_code.replace(/\D/g, '').padStart(5, '0').slice(-5);
     const cls = p.diagnosis_class;
     const datasetLabel =
@@ -85,7 +76,7 @@ export const useTraceView = (explicitPatientId?: number) => {
     return {
       caseId: `ZC-${code}`,
       datasetLabel,
-      signalQ: 'Q92',
+      signalQ: 'Q—',
       severity:
         cls === 'mi' ? ('CRITICAL' as const)
         : cls === 'normal' ? ('ROUTINE' as const)
@@ -101,11 +92,7 @@ export const useTraceView = (explicitPatientId?: number) => {
       qt: typeof a.qt_ms === 'number' ? Math.round(a.qt_ms) : 0,
       qtc: typeof a.qtc_ms === 'number' ? Math.round(a.qtc_ms) : 0,
       axis: typeof a.axis_deg === 'number' ? Math.round(a.axis_deg) : 0,
-      bookmarks: [
-        { label: 'Onset', offset: 'T+0s' },
-        { label: 'Peak', offset: 'T+12s' },
-        { label: 'Resolution', offset: 'T+42s' },
-      ],
+      bookmarks: [] as { label: string; offset: string }[],
     };
   }, [clinicalQ.data]);
 

@@ -14,8 +14,8 @@ export const createHeaderStyles = (theme: AppTheme) =>
       alignItems: 'center',
     },
     logoImage: {
-      width: 90,
-      height: 36,
+      width: 130,
+      height: 52,
     },
     actions: {
       flexDirection: 'row',

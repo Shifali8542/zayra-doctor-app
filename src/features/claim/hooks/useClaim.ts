@@ -14,43 +14,11 @@ import type {
   TimelineEventViewModel,
 } from '../../../types';
 
-const fallbackCase: CaseViewModel = {
-  id: 'placeholder',
-  caseId: 'ZC-00000',
-  patientId: 0,
-  severity: 'ROUTINE',
-  anomaly: 'Loading…',
-  patientSex: '—',
-  patientAge: 0,
-  patientCode: '',
-  hr: null,
-  spo2: null,
-  confidence: 0,
-  signalQ: 'Q—',
-  viewing: 0,
-  ageMinutes: 0,
-  status: 'live',
-  datasetLabel: ''
-};
+const fallbackCase: CaseViewModel = null as unknown as CaseViewModel;
 
-const fallbackContext: PatientContextViewModel = {
-  sex: '—',
-  age: 0,
-  comorbidities: '—',
-  adherencePct: 0,
-  activity: '—',
-  sleep: '—',
-  dietPattern: '—',
-  smokingAlcohol: '—',
-};
+const fallbackContext: PatientContextViewModel | null = null;
 
-const fallbackPhysiology: PhysiologySnapshotViewModel = {
-  pulse: { value: 0, baseline: 78 },
-  hrv: { value: 0, baseline: 48, unit: 'ms' },
-  spo2: { value: 0, baseline: 97 },
-  recovery: 'Moderate',
-  recoveryNote: '—',
-};
+const fallbackPhysiology: PhysiologySnapshotViewModel | null = null;
 
 export const useClaim = (caseId?: number) => {
   // Single call — replaces 3 separate calls
@@ -88,8 +56,8 @@ export const useClaim = (caseId?: number) => {
   );
 
   // ── View model assembly 
-  const caseItem: CaseViewModel = useMemo(() => {
-    if (!detail) return fallbackCase;
+const caseItem: CaseViewModel | null = useMemo(() => {
+    if (!detail) return null;
     const c = detail.case;
     const p = detail.patient;
     const v = detail.vitals;
@@ -123,8 +91,8 @@ export const useClaim = (caseId?: number) => {
     };
   }, [detail]);
 
-  const patientContext: PatientContextViewModel = useMemo(() => {
-    if (!detail) return fallbackContext;
+  const patientContext: PatientContextViewModel | null = useMemo(() => {
+    if (!detail) return null;
     const p = detail.patient;
     const extra = p.extra_info ?? {};
     return {
@@ -139,15 +107,15 @@ export const useClaim = (caseId?: number) => {
     };
   }, [detail]);
 
-  const physiology: PhysiologySnapshotViewModel = useMemo(() => {
-    // If doctor switched record, use fresh clinical data; else use case vitals
+  const physiology: PhysiologySnapshotViewModel | null = useMemo(() => {
     const v = clinicalQ.data?.ecg_analysis ?? detail?.vitals;
-    if (!v) return fallbackPhysiology;
+    if (!v) return null;
+    const hr = (v as any).heart_rate_bpm;
     return {
-      pulse: { value: Math.round((v as any).heart_rate_bpm ?? 0), baseline: 78 },
-      hrv: { value: Math.round((v as any).hrv_ms ?? 0), baseline: 48, unit: 'ms' },
-      spo2: { value: 0, baseline: 97 },
-      recovery: 'Moderate' as const,
+      pulse: { value: Math.round(hr ?? 0), baseline: 0 },
+      hrv: { value: Math.round((v as any).hrv_ms ?? 0), baseline: 0, unit: 'ms' },
+      spo2: { value: 0, baseline: 0 },
+      recovery: hr > 110 ? 'Low' : hr > 90 ? 'Moderate' : 'High',
       recoveryNote: (v as any).rhythm ?? '—',
     };
   }, [clinicalQ.data, detail]);

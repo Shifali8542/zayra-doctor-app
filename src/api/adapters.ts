@@ -123,13 +123,6 @@ export const patientListItemToCase = (
   } = {},
 ): CaseViewModel => {
   const severity = diagnosisClassToSeverity(p.diagnosis_class);
-  const baseHr =
-    severity === 'CRITICAL' ? 168 : severity === 'URGENT' ? 122 : 78;
-  const baseSpo2 =
-    severity === 'CRITICAL' ? 91 : severity === 'URGENT' ? 95 : 98;
-  const baseConfidence =
-    severity === 'CRITICAL' ? 96 : severity === 'URGENT' ? 88 : 76;
-
   return {
     id: `${p.id}-list`,
     caseId: formatCaseId(p.patient_code),
@@ -139,13 +132,13 @@ export const patientListItemToCase = (
     patientSex: sexToInitial(p.sex),
     patientAge: p.age ?? 0,
     patientCode: p.patient_code,
-    hr: baseHr,
-    hrDelta: severity === 'CRITICAL' ? 84 : severity === 'URGENT' ? 38 : 8,
-    spo2: baseSpo2,
-    confidence: baseConfidence,
-    signalQ: `Q${85 + (p.id % 12)}`,
-    viewing: opts.viewing ?? Math.max(1, (p.id % 14) + 1),
-    ageMinutes: opts.ageMinutes ?? Math.max(1, (p.id % 30) + 1),
+    hr: null,
+    hrDelta: null,
+    spo2: null,
+    confidence: 0,
+    signalQ: 'Q—',
+    viewing: opts.viewing ?? 0,
+    ageMinutes: opts.ageMinutes ?? 0,
     status: opts.status ?? 'live',
     datasetSource: p.dataset_source,
     datasetLabel: formatDatasetLabel(p.dataset_source, p.dataset_source_display),
@@ -172,13 +165,13 @@ export const stSummaryRowToCase = (
     patientSex: '—',
     patientAge: 0,
     patientCode: row.patient_code,
-    hr: severity === 'CRITICAL' ? 178 : severity === 'URGENT' ? 132 : 84,
-    hrDelta: severity === 'CRITICAL' ? 94 : severity === 'URGENT' ? 48 : 6,
-    spo2: severity === 'CRITICAL' ? 91 : severity === 'URGENT' ? 95 : 97,
-    confidence: row.confidence_score ?? 85,
-    signalQ: `Q${row.confidence_score ?? 90}`,
-    viewing: Math.max(1, (row.patient_id % 12) + 1),
+    hr: null,
+    hrDelta: null,
+    spo2: null,
+    confidence: row.confidence_score ?? 0,
+    signalQ: row.confidence_score ? `Q${row.confidence_score}` : 'Q—',
     ageMinutes,
+    viewing: 0,
     status: 'live',
     datasetLabel: 'ST Analysis',
   };
@@ -229,18 +222,18 @@ export const patientDetailToContext = (
       : !looksLikeCode(p.diagnosis)
         ? (p.diagnosis as string)
         : '—';
-  return {
+ return {
     sex: sexToInitial(p.sex),
     age: p.age ?? 0,
     comorbidities,
-    adherencePct: 92,
-    activity: typeof extra.activity === 'string' ? extra.activity : 'Sedentary, 4.2k steps/day',
-    sleep: typeof extra.sleep === 'string' ? extra.sleep : '6h 12m avg · efficiency 78%',
-    dietPattern: typeof extra.diet === 'string' ? extra.diet : 'Moderate sodium, low fiber',
+    adherencePct: typeof extra.adherence_pct === 'number' ? extra.adherence_pct : 0,
+    activity: typeof extra.activity === 'string' ? extra.activity : '—',
+    sleep: typeof extra.sleep === 'string' ? extra.sleep : '—',
+    dietPattern: typeof extra.diet === 'string' ? extra.diet : '—',
     smokingAlcohol:
       typeof extra.smoking_alcohol === 'string'
         ? extra.smoking_alcohol
-        : 'Never · Occasional',
+        : '—',
   };
 };
 
@@ -249,14 +242,14 @@ export const clinicalInfoToPhysiology = (
 ): PhysiologySnapshotViewModel => {
   const a = info.ecg_analysis ?? {};
   const hr =
-    typeof a.heart_rate_bpm === 'number' ? Math.round(a.heart_rate_bpm) : 88;
-  const hrv = typeof a.hrv_ms === 'number' ? Math.round(a.hrv_ms) : 32;
+    typeof a.heart_rate_bpm === 'number' ? Math.round(a.heart_rate_bpm) : null;
+  const hrv = typeof a.hrv_ms === 'number' ? Math.round(a.hrv_ms) : null;
   return {
-    pulse: { value: hr, baseline: 78 },
-    hrv: { value: hrv, baseline: 48, unit: 'ms' },
-    spo2: { value: 96, baseline: 97 },
-    recovery: hr > 110 ? 'Low' : hr > 90 ? 'Moderate' : 'High',
-    recoveryNote: hr > 110 ? 'elevated 36h' : 'within range',
+    pulse: { value: hr ?? 0, baseline: 0 },
+    hrv: { value: hrv ?? 0, baseline: 0, unit: 'ms' },
+    spo2: { value: 0, baseline: 0 },
+    recovery: hr !== null && hr > 0 ? (hr > 110 ? 'Low' : hr > 90 ? 'Moderate' : 'High') : 'Moderate',
+    recoveryNote: '—',
   };
 };
 
@@ -344,25 +337,25 @@ export const userProfileToDoctorView = (
   return {
     name: fullName.startsWith('Dr.') ? fullName : `Dr. ${fullName}`,
     initials,
-    specialty: u.specialization || 'Cardiology',
+    specialty: u.specialization || '—',
     experienceYears: u.years_of_experience ?? 0,
     city: u.hospital_name || '—',
     licenseVerified: !!u.license_number,
-    languages: ['English'],
-    available: true,
+    languages: [],
+    available: false,
     emergencyOnly: false,
-    workingHours: 'Mon–Sat · 08:00 – 22:00',
-    severityFilters: 'Critical · Urgent · Routine',
+    workingHours: '—',
+    severityFilters: '—',
   };
 };
 
 export const summaryToDoctorStats = (
-  s: DiagnosisSummaryResponse | null,
+  _s: DiagnosisSummaryResponse | null,
 ): DoctorStatsViewModel => ({
-  avgResponseSec: 38,
-  todayEarningsUsd: Math.min(999, Math.round((s?.total_records ?? 0) / 100)),
-  confidencePct: 94,
-  streakDays: 23,
+  avgResponseSec: 0,
+  todayEarningsUsd: 0,
+  confidencePct: 0,
+  streakDays: 0,
 });
 
 export const impactStatsToViewModel = (
