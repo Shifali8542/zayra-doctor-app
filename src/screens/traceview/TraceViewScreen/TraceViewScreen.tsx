@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Layout } from '../../../components/Layout/Layout';
 import { Header } from '../../../components/Header/Header';
 import { Card } from '../../../components/Card/Card';
@@ -25,27 +25,25 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
   const styles = createTraceViewScreenStyles(theme);
   const { deviceType } = useResponsive();
   const patientId: number | undefined = route?.params?.patientId;
+  const recordId: number | undefined  = route?.params?.recordId;
   const {
-    caseItem, rhythm, zoom, zoomIn, zoomOut,
+    caseItem, rhythm,
+    waveformData, effectiveSamplingRate, segments,
+    records, totalRecords, activeRecordId, activeRecordIndex, selectRecord,
+    zoom, zoomIn, zoomOut,
     annotation, setAnnotation, saveAnnotation,
-    loading, error,
-  } = useTraceView(patientId);
+    loading, waveformLoading, error,
+  } = useTraceView(patientId, recordId);
 
   const containerW = Math.min(getMaxContentWidth(deviceType), 600) - 80;
   const stripWidth = Math.max(220, containerW * zoom);
   const stripHeight = 130;
 
-  const sev = caseItem?.severity === 'CRITICAL'
-    ? 'critical'
-    : caseItem?.severity === 'URGENT'
-      ? 'urgent'
-      : 'normal';
-
   return (
     <Layout scroll padded edges={['top']} bottomInsetExtra={92}>
       <Header onProfilePress={() => navigation.navigate('Profile')} />
 
-     <View style={styles.titleWrap}>
+      <View style={styles.titleWrap}>
         <Text style={styles.title}>TraceView</Text>
         <Text style={styles.subtitle}>
           {caseItem?.datasetLabel ?? '—'} · Lead II · 25 mm/s · 10 mm/mV · {caseItem?.signalQ ?? '—'}
@@ -88,48 +86,175 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
             </Pressable>
           </View>
 
+          {/* ECG Record Tabs */}
+          {records.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: theme.spacing.md }}
+              contentContainerStyle={{ paddingHorizontal: 2, flexDirection: 'row', gap: 8 }}
+            >
+              {records.map((rec) => {
+                const isActive = rec.id === activeRecordId;
+                return (
+                  <Pressable
+                    key={rec.id}
+                    onPress={() => selectRecord(rec.id)}
+                    style={({ pressed }) => ({
+                      paddingHorizontal: 14,
+                      paddingVertical: 7,
+                      borderRadius: theme.radii.pill,
+                      backgroundColor: isActive ? theme.colors.primary : theme.colors.surface,
+                      borderWidth: 1,
+                      borderColor: isActive ? theme.colors.primary : theme.colors.divider,
+                      opacity: pressed ? 0.75 : 1,
+                    })}
+                  >
+                    <Text style={{
+                      ...theme.typography.bodyStrong,
+                      color: isActive ? '#fff' : theme.colors.textSecondary,
+                      fontSize: 13,
+                    }}>
+                      {rec.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {/* BEFORE strip */}
           <View style={styles.strip}>
             <View style={styles.stripHeader}>
               <Text style={styles.stripLabel}>BEFORE</Text>
-              <Text style={styles.stripMeta}>II · 25MM/S</Text>
+              <Text style={styles.stripMeta}>
+                {segments.before
+                  ? `${segments.before.start_sec}s – ${segments.before.end_sec}s`
+                  : 'II · 25MM/S'}
+              </Text>
             </View>
-            <EcgWaveform
-              width={stripWidth}
-              height={stripHeight}
-              severity="normal"
-              seed={11}
-              cycles={Math.round(4 * zoom)}
-            />
+            {waveformLoading ? (
+              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator color={theme.colors.primary} size="small" />
+              </View>
+            ) : segments.before ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <EcgWaveform
+                  width={Math.max(stripWidth, 500)}
+                  height={stripHeight}
+                  data={segments.before.samples}
+                  effectiveSamplingRate={effectiveSamplingRate}
+                  displaySeconds={30}
+                />
+              </ScrollView>
+            ) : (
+              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>No data</Text>
+              </View>
+            )}
           </View>
 
+          {/* DURING ANOMALY strip */}
           <View style={[styles.strip, styles.stripHighlight]}>
             <View style={styles.stripHeader}>
               <Text style={styles.stripLabel}>DURING ANOMALY</Text>
-              <Text style={styles.stripMeta}>II · 25MM/S</Text>
+              <Text style={styles.stripMeta}>
+                {segments.anomaly
+                  ? `${segments.anomaly.start_sec}s – ${segments.anomaly.end_sec}s`
+                  : 'II · 25MM/S'}
+              </Text>
             </View>
-            <EcgWaveform
-              width={stripWidth}
-              height={stripHeight}
-              severity={sev}
-              seed={42}
-              cycles={Math.round(6 * zoom)}
-            />
+            {waveformLoading ? (
+              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator color={theme.colors.primary} size="small" />
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 6 }}>
+                  {`ECG ${activeRecordIndex + 1} of ${totalRecords} · Loading…`}
+                </Text>
+              </View>
+            ) : segments.anomaly ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <EcgWaveform
+                  width={Math.max(stripWidth, 500)}
+                  height={stripHeight}
+                  data={segments.anomaly.samples}
+                  effectiveSamplingRate={effectiveSamplingRate}
+                  displaySeconds={30}
+                  strokeColor={theme.colors.pulseRed}
+                />
+              </ScrollView>
+            ) : (
+              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>No data</Text>
+              </View>
+            )}
+          </View>
+
+          {/* AFTER strip */}
+          <View style={styles.strip}>
+            <View style={styles.stripHeader}>
+              <Text style={styles.stripLabel}>AFTER</Text>
+              <Text style={styles.stripMeta}>
+                {segments.after
+                  ? `${segments.after.start_sec}s – ${segments.after.end_sec}s`
+                  : 'II · 25MM/S'}
+              </Text>
+            </View>
+            {waveformLoading ? (
+              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator color={theme.colors.primary} size="small" />
+              </View>
+            ) : segments.after ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <EcgWaveform
+                  width={Math.max(stripWidth, 500)}
+                  height={stripHeight}
+                  data={segments.after.samples}
+                  effectiveSamplingRate={effectiveSamplingRate}
+                  displaySeconds={30}
+                />
+              </ScrollView>
+            ) : (
+              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>No data</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.strip}>
             <View style={styles.stripHeader}>
-              <Text style={styles.stripLabel}>AFTER</Text>
-              <Text style={styles.stripMeta}>II · 25MM/S</Text>
+              <Text style={styles.stripLabel}>
+                {totalRecords > 0
+                  ? `ECG ${activeRecordIndex + 1} OF ${totalRecords} · LEAD II`
+                  : 'LEAD II'}
+              </Text>
+              <Text style={styles.stripMeta}>25MM/S · 10MM/MV</Text>
             </View>
-            <EcgWaveform
-              width={stripWidth}
-              height={stripHeight}
-              severity="urgent"
-              seed={73}
-              cycles={Math.round(5 * zoom)}
-            />
-          </View>
 
+            {waveformLoading ? (
+              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator color={theme.colors.primary} size="small" />
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 6 }}>
+                  Loading signal…
+                </Text>
+              </View>
+            ) : waveformData ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <EcgWaveform
+                  width={Math.max(stripWidth, 600)}
+                  height={stripHeight}
+                  data={waveformData}
+                  effectiveSamplingRate={effectiveSamplingRate}
+                  displaySeconds={10 * zoom}
+                />
+              </ScrollView>
+            ) : (
+              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                  No signal data available
+                </Text>
+              </View>
+            )}
+          </View>
           <Card style={{ marginTop: theme.spacing.xxl }}>
             <Text style={styles.cardTitle}>Rhythm summary</Text>
             <View style={styles.kvRow}><Text style={styles.kvLabel}>Rate</Text><Text style={styles.kvValue}>{rhythm.rate} bpm</Text></View>

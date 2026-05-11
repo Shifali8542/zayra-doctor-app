@@ -40,6 +40,7 @@ export const ENDPOINTS = {
   patientDatasetOverview: '/patients/dataset-overview/',
   patientDetail: (id: number) => `/patients/${id}/`,
   patientRecords: (id: number) => `/patients/${id}/records/`,
+  patientRecordsIndex: (id: number) => `/patients/${id}/records/index/`,
   patientWaveform: (id: number) => `/patients/${id}/waveform/`,
   patientClinicalInfo: (id: number) => `/patients/${id}/clinical-info/`,
   patientReport: (id: number) => `/patients/${id}/report/`,
@@ -249,13 +250,19 @@ export const patientsApi = {
       ENDPOINTS.patientRecords(id),
     ),
 
-  waveform: (
+ waveform: (
     id: number,
     opts?: { record_id?: number; channels?: string; downsample?: number },
   ) =>
     request<WaveformResponse>(ENDPOINTS.patientWaveform(id), {
       query: opts,
+      timeoutMs: 90_000,
     }),
+
+  recordsIndex: (id: number) =>
+    request<import('../types').RecordsIndexResponse>(
+      ENDPOINTS.patientRecordsIndex(id),
+    ),
 
   clinicalInfo: (id: number, opts?: { record_id?: number }) =>
     request<ClinicalInfoResponse>(ENDPOINTS.patientClinicalInfo(id), {

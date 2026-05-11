@@ -83,6 +83,7 @@ export type ECGSplit = 'train' | 'validation' | 'test';
 export interface ECGRecord {
   id: number;
   record_name: string;
+  record_index: number;
   sampling_rate: number | null;
   num_channels: number | null;
   channel_names: string[] | null;
@@ -129,10 +130,27 @@ export interface WaveformGrid {
   large_box_mv: number;
 }
 
+export interface WaveformSegment {
+  samples: number[];
+  start_sec: number;
+  end_sec: number;
+}
+
+export interface WaveformSegments {
+  before:  WaveformSegment;
+  anomaly: WaveformSegment;
+  after:   WaveformSegment;
+}
+
 export interface WaveformResponse {
   patient_code: string;
+  record_id: number;
   record_name: string;
+  record_index: number;
+  total_records: number;
   diagnosis: string | null;
+  dataset_source: string | null;
+  dataset_source_display: string | null;
   age: number | null;
   sex: string | null;
   sampling_rate: number;
@@ -142,8 +160,49 @@ export interface WaveformResponse {
   channel_names: string[];
   units: string[];
   waveforms: Record<string, number[]>;
+  segments: Partial<WaveformSegments>;
   grid: WaveformGrid;
   recommended_display_seconds: number;
+}
+
+export interface RecordsIndexRecord {
+  id: number;
+  record_index: number;
+  record_name: string;
+  label: string;
+  duration_seconds: number | null;
+  sampling_rate: number | null;
+  num_channels: number | null;
+  channel_names: string[];
+}
+
+export interface RecordsIndexResponse {
+  patient_id: number;
+  patient_code: string;
+  dataset_source: string | null;
+  dataset_source_display: string | null;
+  total_records: number;
+  records: RecordsIndexRecord[];
+}
+
+export interface RecordsIndexRecord {
+  id: number;
+  record_index: number;
+  record_name: string;
+  label: string;          // "ECG 1", "ECG 2", etc.
+  duration_seconds: number | null;
+  sampling_rate: number | null;
+  num_channels: number | null;
+  channel_names: string[];
+}
+
+export interface RecordsIndexResponse {
+  patient_id: number;
+  patient_code: string;
+  dataset_source: string | null;
+  dataset_source_display: string | null;
+  total_records: number;
+  records: RecordsIndexRecord[];
 }
 
 export interface EcgAnalysis {

@@ -8,7 +8,6 @@ import { Tag } from '../../../components/Tag/Tag';
 import { SeverityBadge } from '../../../components/SeverityBadge/SeverityBadge';
 import { MetricCard } from '../../../components/MetricCard/MetricCard';
 import { Icon } from '../../../components/Icon';
-import { EcgWaveform } from '../../../components/EcgWaveform/EcgWaveform';
 import { useClaim } from '../../../features/claim/hooks/useClaim';
 import { useAppTheme } from '../../../context/ThemeContext';
 import { createClaimDetailScreenStyles } from './ClaimDetailScreen.style';
@@ -467,7 +466,7 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
                 onPress={() =>
                   navigation.navigate('Tabs', {
                     screen: 'TraceView',
-                    params: { patientId },
+                    params: { patientId, recordId: caseItem?.recordId },
                   })
                 }
               />
@@ -495,7 +494,7 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
                 onPress={() =>
                   navigation.navigate('Tabs', {
                     screen: 'TraceView',
-                    params: { patientId },
+                    params: { patientId, recordId: caseItem?.recordId },
                   })
                 }
                 style={({ pressed }) => pressed && { opacity: 0.7 }}
@@ -504,13 +503,11 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
               </Pressable>
             </View>
 
-            <EcgWaveform
-              width={ecgWidth > 60 ? ecgWidth : screenWidth - 80}
-              height={120}
-              severity={caseItem.severity === 'CRITICAL' ? 'critical' : caseItem.severity === 'URGENT' ? 'urgent' : 'normal'}
-              seed={43}
-              style={{ marginTop: theme.spacing.lg, alignSelf: 'center' }}
-            />
+            <View style={{ marginTop: theme.spacing.lg, paddingVertical: theme.spacing.lg, alignItems: 'center', borderRadius: theme.radii.lg, backgroundColor: '#0E1B2C' }}>
+              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                Tap "Inspect in TraceView →" to view the full real ECG signal
+              </Text>
+            </View>
             <View style={styles.captureMetaRow}>
               <Text style={styles.captureMeta}>Lead II · 25mm/s · 10mm/mV</Text>
             </View>
