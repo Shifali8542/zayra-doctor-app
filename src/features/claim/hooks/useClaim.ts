@@ -1,13 +1,11 @@
 import { useMemo, useState } from 'react';
 import { api } from '../../../api/api';
-import {
-  caseHistoryToTimeline,
-  clinicalInfoToPhysiology,
-} from '../../../api/adapters';
+import { caseHistoryToTimeline } from '../../../api/adapters';
 import { useApi } from '../../../utils/useApi';
 import type {
   CaseDetailFull,
   CaseViewModel,
+  ECGRecordComparison,
   ECGRecordHistoryItem,
   PatientContextViewModel,
   PhysiologySnapshotViewModel,
@@ -126,17 +124,54 @@ const caseItem: CaseViewModel | null = useMemo(() => {
     [detail],
   );
 
-  // ECG records with enriched ST/AI/HR per record
+  // ECG record comparison — full metrics + deltas per record
+  // ECG record comparison — full metrics + deltas per record
+  const comparisonQ = useApi(
+    () => {
+      if (!patientId) {
+        console.log('[useClaim] comparisonQ: skipped — no patientId yet');
+        return Promise.reject(new Error('No patient id'));
+      }
+      console.log('[useClaim] comparisonQ: fetching for patientId=', patientId);
+      return api.patients.recordComparison(patientId);
+    },
+    [patientId],
+  );
+
+  // Log every state change so we can trace the problem
+  console.log('[useClaim] --- state snapshot ---');
+  console.log('[useClaim] caseId:', caseId);
+  console.log('[useClaim] detailQ.loading:', detailQ.loading, '| detailQ.error:', detailQ.error);
+  console.log('[useClaim] detail:', detail ? 'present' : 'null');
+  console.log('[useClaim] patientId from detail:', patientId);
+  console.log('[useClaim] comparisonQ.loading:', comparisonQ.loading, '| comparisonQ.error:', comparisonQ.error ?? 'none');
+  if (comparisonQ.error) {
+    console.warn('[useClaim] ⚠️  comparison fetch failed — likely backend S3 timeout. Error:', comparisonQ.error);
+  }
+  console.log('[useClaim] comparisonQ.data (raw):', JSON.stringify(comparisonQ.data, null, 2));
+
+  // ECG records with enriched ST/AI/HR per record (legacy — kept for backward compat)
   const ecgRecords: ECGRecordHistoryItem[] = recordsQ.data?.records ?? [];
+
+  // Full comparison records with deltas
+  const comparisonRecords: ECGRecordComparison[] =
+    comparisonQ.data?.records ?? [];
+
+  console.log('[useClaim] comparisonRecords.length:', comparisonRecords.length);
+  console.log('[useClaim] ecgRecords.length:', ecgRecords.length);
 
   return {
     caseItem,
     timeline,
     ecgRecords,
+    comparisonRecords,
     patientContext,
     physiology,
     selectedRecordId,
     setSelectedRecordId,
+    clinicalLoading: clinicalQ.loading,
+    comparisonLoading: comparisonQ.loading,
+    comparisonError: comparisonQ.error,
     aiAnalysis: detail?.orinn ?? null,
     stAnalysis: detail?.st_analysis ?? null,
     allDiagnoses: detail?.patient?.all_diagnoses ?? [],
@@ -144,7 +179,11 @@ const caseItem: CaseViewModel | null = useMemo(() => {
     loading: detailQ.loading,
     error: detailQ.error,
     refetch: async () => {
-      await Promise.all([detailQ.refetch(), recordsQ.refetch()]);
+      await Promise.all([
+        detailQ.refetch(),
+        recordsQ.refetch(),
+        comparisonQ.refetch(),
+      ]);
     },
   };
 };

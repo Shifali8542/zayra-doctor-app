@@ -33,7 +33,7 @@ const buildPath = (width: number, height: number, seed: number): string => {
   return d;
 };
 
-export const WaveformPlaceholder: React.FC<WaveformPlaceholderProps> = ({
+export const WaveformPlaceholder: React.FC<WaveformPlaceholderProps> = React.memo(({
   height = 56,
   style,
   seed = 5,
@@ -42,15 +42,20 @@ export const WaveformPlaceholder: React.FC<WaveformPlaceholderProps> = ({
   const styles = createWaveformPlaceholderStyles(theme);
   const [width, setWidth] = React.useState(0);
 
+  const pathD = React.useMemo(
+    () => (width > 0 ? buildPath(width, height, seed) : ''),
+    [width, height, seed],
+  );
+
   return (
     <View
       style={[styles.container, { height }, style]}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
     >
-      {width > 0 ? (
+      {pathD ? (
         <Svg width={width} height={height}>
           <Path
-            d={buildPath(width, height, seed)}
+            d={pathD}
             stroke={theme.colors.divider}
             strokeWidth={1.4}
             fill="none"
@@ -61,4 +66,4 @@ export const WaveformPlaceholder: React.FC<WaveformPlaceholderProps> = ({
       ) : null}
     </View>
   );
-};
+});

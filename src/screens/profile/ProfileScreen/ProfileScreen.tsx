@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Layout } from '../../../components/Layout/Layout';
 import { Header } from '../../../components/Header/Header';
@@ -61,6 +61,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     setLockScreenAlerts, setHapticSound,
   } = useProfile();
   const { logout } = useAuth();
+
+  if (!profile) {
+    return (
+      <Layout scroll padded edges={['top']} bottomInsetExtra={32}>
+        <Header />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
+          <ActivityIndicator color={theme.colors.primary} />
+        </View>
+      </Layout>
+    );
+  }
 
   return (
     <Layout scroll padded edges={['top']} bottomInsetExtra={32}>

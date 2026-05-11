@@ -18,12 +18,13 @@ interface CaseCardProps {
   showClaim?: boolean;
 }
 
-export const CaseCard: React.FC<CaseCardProps> = ({
+export const CaseCard: React.FC<CaseCardProps> = React.memo(({
   caseItem,
   onPress,
   onClaim,
   showClaim = true,
 }) => {
+
   const theme = useAppTheme();
   const styles = createCaseCardStyles(theme);
 
@@ -68,10 +69,9 @@ export const CaseCard: React.FC<CaseCardProps> = ({
           />
           <View style={styles.metricGap} />
           <MetricCard
-            label="SPO"
-            subscript="₂"
-            value={caseItem.spo2 ?? '—'}
-            unit="%"
+            label="HRV"
+            value={caseItem.hrv ?? '—'}
+            unit="ms"
           />
           <View style={styles.metricGap} />
           <MetricCard
@@ -104,4 +104,4 @@ export const CaseCard: React.FC<CaseCardProps> = ({
       </Card>
     </Pressable>
   );
-};
+});

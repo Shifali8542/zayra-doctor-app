@@ -1,11 +1,12 @@
-import React from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Layout } from '../../../components/Layout/Layout';
 import { Header } from '../../../components/Header/Header';
 import { StatBadge } from '../../../components/StatBadge/StatBadge';
 import { CaseCard } from '../../../components/CaseCard/CaseCard';
 import { SectionTitle } from '../../../components/SectionTitle/SectionTitle';
+import { Icon } from '../../../components/Icon';
 import { useDashboard } from '../../../features/dashboard/hooks/useDashboard';
 import { useAppTheme } from '../../../context/ThemeContext';
 import { createHomeScreenStyles } from './HomeScreen.style';
@@ -35,10 +36,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { stats, profile, liveCases, pendingCount, loading, error, refetch } =
     useDashboard();
 
+  const [homeSearch, setHomeSearch] = useState('');
   const firstName = profile?.name ? profile.name.split(' ').slice(-1)[0] : 'Doctor';
   const goToClaim = (caseId: number) => {
     navigation.navigate('ClaimDetail', { caseId });
   };
+
+  const filteredCases = useMemo(() => {
+    if (!homeSearch.trim()) return liveCases;
+    const q = homeSearch.toLowerCase();
+    return liveCases.filter(
+      (c) =>
+        c.anomaly?.toLowerCase().includes(q) ||
+        c.datasetLabel?.toLowerCase().includes(q) ||
+        c.patientCode?.toLowerCase().includes(q) ||
+        c.severity?.toLowerCase().includes(q),
+    );
+  }, [liveCases, homeSearch]);
 
   return (
     <Layout
@@ -93,6 +107,43 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         />
       </View>
 
+      {/* ── Search bar ── */}
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.radii.pill,
+        borderWidth: 1,
+        borderColor: theme.colors.divider,
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.sm,
+        marginBottom: theme.spacing.lg,
+        gap: theme.spacing.sm as any,
+      }}>
+        <Icon name="search" size={16} color={theme.colors.textTertiary} />
+        <TextInput
+          style={{
+            ...theme.typography.body,
+            color: theme.colors.textPrimary,
+            flex: 1,
+            paddingVertical: 4,
+          }}
+          placeholder="Search anomaly, dataset, patient…"
+          placeholderTextColor={theme.colors.textTertiary}
+          value={homeSearch}
+          onChangeText={setHomeSearch}
+          returnKeyType="search"
+          autoCorrect={false}
+          autoCapitalize="none"
+          clearButtonMode="never"
+        />
+        {homeSearch.length > 0 && (
+          <Pressable onPress={() => setHomeSearch('')} style={{ padding: 4 }}>
+            <Icon name="close-circle" size={16} color={theme.colors.textTertiary} />
+          </Pressable>
+        )}
+      </View>
+
       {loading && liveCases.length === 0 ? (
         <View style={styles.statusWrap}>
           <ActivityIndicator color={theme.colors.primary} />
@@ -109,8 +160,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.statusWrap}>
           <Text style={styles.statusText}>No live cases right now.</Text>
         </View>
+      ) : filteredCases.length === 0 ? (
+        <View style={styles.statusWrap}>
+          <Text style={styles.statusText}>No cases match "{homeSearch}"</Text>
+        </View>
       ) : (
-        liveCases.map((c) => (
+        filteredCases.map((c) => (
           <CaseCard
             key={c.id}
             caseItem={c}

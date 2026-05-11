@@ -116,4 +116,39 @@ export const createCasesScreenStyles = (theme: AppTheme) =>
       textAlign: 'center',
       marginTop: theme.spacing.xs,
     },
+
+    // ── Search bar ────────────────────────────────────────────────────────────
+    searchWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.divider,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
+      marginBottom: theme.spacing.lg,
+      gap: theme.spacing.sm as any,
+    },
+    searchInput: {
+      ...theme.typography.body,
+      color: theme.colors.textPrimary,
+      flex: 1,
+      paddingVertical: 4,
+    },
+    searchClear: {
+      padding: 4,
+    },
+    footerLoader: {
+      paddingVertical: theme.spacing.xl,
+      alignItems: 'center',
+    },
+    footerEnd: {
+      paddingVertical: theme.spacing.lg,
+      alignItems: 'center',
+    },
+    footerEndText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textTertiary,
+    },
   });

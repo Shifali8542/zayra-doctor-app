@@ -541,6 +541,48 @@ export interface PatientRecordsResponse {
   records: ECGRecordHistoryItem[];
 }
 
+export interface ECGRecordDelta {
+  heart_rate_bpm: number | null;
+  hrv_ms: number | null;
+  qrs_width_ms: number | null;
+  qt_ms: number | null;
+  qtc_ms: number | null;
+  quality_score: number | null;
+  ai_risk_score: number | null;
+  rhythm_changed: boolean | null;
+  st_status_changed: boolean | null;
+}
+
+export interface ECGRecordComparison {
+  id: number;
+  record_name: string;
+  sampling_rate: number | null;
+  num_channels: number | null;
+  duration_seconds: number | null;
+  heart_rate_bpm: number | null;
+  heart_rate_min: number | null;
+  heart_rate_max: number | null;
+  hrv_ms: number | null;
+  rhythm: string | null;
+  qrs_width_ms: number | null;
+  qt_ms: number | null;
+  qtc_ms: number | null;
+  quality_score: number | null;
+  st_status: string | null;
+  stemi_suspected: boolean | null;
+  affected_region: string | null;
+  st_confidence: number | null;
+  ai_risk_level: string | null;
+  ai_risk_score: number | null;
+  delta_vs_previous: ECGRecordDelta | null;
+}
+
+export interface RecordComparisonResponse {
+  patient_code: string;
+  count: number;
+  records: ECGRecordComparison[];
+}
+
 export interface AlynaMessageViewModel {
   id: string;
   role: 'user' | 'assistant';
@@ -585,6 +627,13 @@ export type IconName =
 
 export type CasesTab = 'live' | 'claimed' | 'completed' | 'missed' | 'escalated';
 
+export interface CaseCounts {
+  live: number;
+  claimed: number;
+  completed: number;
+  missed: number;
+  escalated: number;
+}
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;

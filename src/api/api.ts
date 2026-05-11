@@ -46,6 +46,8 @@ export const ENDPOINTS = {
   patientWaveformAnalysis: (id: number) => `/patients/${id}/waveform-analysis/`,
   patientWaveformAnnotations: (id: number) =>
     `/patients/${id}/waveform-annotations/`,
+  patientRecordComparison: (id: number) =>
+    `/patients/${id}/record-comparison/`,
 
   // Cardio assessments
   aiAnalysisForPatient: (id: number) =>
@@ -56,6 +58,7 @@ export const ENDPOINTS = {
 
   // Cases
   cases: '/cases/',
+  caseCounts: '/cases/counts/',
   caseDetail: (id: number) => `/cases/${id}/`,
   caseDetailFull: (id: number) => `/cases/${id}/detail/`,
   caseClaim: (id: number) => `/cases/${id}/claim/`,
@@ -264,6 +267,12 @@ export const patientsApi = {
       ENDPOINTS.patientRecords(id),
       { query: { history: 'true' } },
     ),
+
+  recordComparison: (id: number) =>
+    request<import('../types').RecordComparisonResponse>(
+      ENDPOINTS.patientRecordComparison(id),
+      { timeoutMs: 120_000 },
+    ),
 };
 
 // CARDIO ASSESSMENT API
@@ -314,6 +323,8 @@ export const casesApi = {
   list: (query?: CaseListQuery) =>
     request<Paginated<CaseReview>>(ENDPOINTS.cases, { query }),
 
+  counts: () =>
+    request<import('../types').CaseCounts>(ENDPOINTS.caseCounts),
   detail: (id: number) =>
     request<CaseReview>(ENDPOINTS.caseDetail(id)),
 
