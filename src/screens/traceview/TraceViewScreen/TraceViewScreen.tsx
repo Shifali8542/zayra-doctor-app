@@ -57,10 +57,22 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
             Loading waveform…
           </Text>
         </View>
+      ) : !patientId && !loading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingTop: 80 }}>
+          <Icon name="trace" size={48} color={theme.colors.textTertiary} />
+          <Text style={{ ...theme.typography.h2, color: theme.colors.textPrimary, fontWeight: '700', marginTop: theme.spacing.lg, textAlign: 'center' }}>
+            No case selected
+          </Text>
+          <Text style={{ ...theme.typography.body, color: theme.colors.textSecondary, marginTop: theme.spacing.md, textAlign: 'center', lineHeight: 22 }}>
+            Open a case from PulseDesk or Cases, then tap "Open TraceView" to inspect the ECG signal here.
+          </Text>
+        </View>
       ) : error ? (
-        <Text style={{ color: theme.colors.danger, textAlign: 'center', paddingVertical: 24 }}>
-          {error}
-        </Text>
+        <View style={{ paddingVertical: 24, paddingHorizontal: 16 }}>
+          <Text style={{ color: theme.colors.danger, textAlign: 'center' }}>
+            Unable to load waveform. Please try again from a case.
+          </Text>
+        </View>
       ) : (
         <>
           <View style={styles.toolbar}>

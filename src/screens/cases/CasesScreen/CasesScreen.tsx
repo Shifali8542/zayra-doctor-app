@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -111,13 +111,13 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
 
   const searchRef = useRef<TextInput>(null);
 
-  const tabs: { key: CasesTab; label: string; count: number }[] = [
-    { key: 'live', label: 'Live', count: counts.live },
-    { key: 'claimed', label: 'Claimed', count: counts.claimed },
+  const tabs = useMemo<{ key: CasesTab; label: string; count: number }[]>(() => [
+    { key: 'live',      label: 'Live',      count: counts.live },
+    { key: 'claimed',   label: 'Claimed',   count: counts.claimed },
     { key: 'completed', label: 'Completed', count: counts.completed },
-    { key: 'missed', label: 'Missed', count: counts.missed },
+    { key: 'missed',    label: 'Missed',    count: counts.missed },
     { key: 'escalated', label: 'Escalated', count: counts.escalated },
-  ];
+  ], [counts.live, counts.claimed, counts.completed, counts.missed, counts.escalated]);
 
   // Render helpers 
   const isSearching = search.trim().length > 0;
@@ -198,7 +198,7 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
           ))}
         </ScrollView>
       </View>
-      {/* ── Search bar — sticky below tabs ── */}
+      {/* Search bar */}
       <View style={styles.searchWrap}>
         <Icon name="search" size={16} color={theme.colors.textTertiary} />
         <TextInput
@@ -219,7 +219,7 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
           </Pressable>
         )}
       </View>
-      {/* Search results wrapper — shown only while searching */}
+      {/* Search results wrapper */}
       {isSearching && data.length > 0 && (
         <View style={{
           backgroundColor: theme.colors.surface,
@@ -270,7 +270,7 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
     </View>
   ), [
     activeTab, tabs, search, onSearch, data.length,
-    loading, loadingMore, error, theme, styles, navigation,
+    loading, error, theme, styles, navigation,
   ]);
 
   const ListFooter = useCallback(() => {
@@ -300,6 +300,8 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
       renderItem={isTableTab ? renderCompletedRow : renderCaseCard}
       ListHeaderComponent={ListHeader}
       ListFooterComponent={ListFooter}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       onEndReached={loadMore}
       onEndReachedThreshold={0.3}
       onRefresh={refetch}

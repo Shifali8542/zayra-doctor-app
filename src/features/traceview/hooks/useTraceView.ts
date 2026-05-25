@@ -60,7 +60,7 @@ export const useTraceView = (
 
     setWaveformLoading(true);
     api.patients
-      .waveform(patientId, { record_id: activeRecordId, downsample: 8, channels: 'ii' })
+        .waveform(patientId, { record_id: activeRecordId, downsample: 8, channels: 'II' })
       .then((res) => {
         // Only update state if this record is still active
         if (activeRecordIdRef.current === activeRecordId) {
@@ -135,7 +135,11 @@ export const useTraceView = (
     caseItem,
     rhythm,
     // Waveform
-    waveformData:          waveformData?.waveforms?.['ii'] ?? null,
+    waveformData: useMemo(() => {
+      if (!waveformData?.waveforms) return null;
+      const w = waveformData.waveforms;
+      return w['II'] ?? w['ii'] ?? Object.values(w)[0] ?? null;
+    }, [waveformData]),
     effectiveSamplingRate: waveformData?.effective_sampling_rate ?? 125,
     segments:              waveformData?.segments ?? {},
     // Tabs
