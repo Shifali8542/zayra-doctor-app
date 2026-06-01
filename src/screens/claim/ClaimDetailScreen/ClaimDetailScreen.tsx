@@ -160,7 +160,7 @@ const ECGComparisonTable: React.FC<{
 
   // Fixed label column width + equal data columns
   const COL_LABEL = 88;
-  const COL_DATA  = 96;
+  const COL_DATA = 96;
 
   // ── cell renderers ────────────────────────────────────────────────────────
   const HeaderCell = ({ rec, idx }: { rec: ECGRec; idx: number }) => {
@@ -400,9 +400,8 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
   const styles = createClaimDetailScreenStyles(theme);
   const caseId: number | undefined = route?.params?.caseId ?? route?.params?.patientId;
   const [notes, setNotes] = useState('');
-
   const {
-    caseItem, timeline, ecgRecords, comparisonRecords, patientContext,
+    detail, caseItem, timeline, ecgRecords, comparisonRecords, patientContext,
     physiology, selectedRecordId, setSelectedRecordId,
     clinicalLoading, comparisonLoading, comparisonError,
     aiAnalysis, stAnalysis, records, loading, error,
@@ -413,8 +412,8 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
 
   const patientId = caseItem?.patientId;
   const isClaimed = caseStatus === 'claimed';
-  const isLive    = caseStatus === 'live';
-  const isDone    = caseStatus === 'completed' || caseStatus === 'escalated' || caseStatus === 'missed';
+  const isLive = caseStatus === 'live';
+  const isDone = caseStatus === 'completed' || caseStatus === 'escalated' || caseStatus === 'missed';
 
   const { width: screenWidth } = useResponsive();
   const ecgWidth = screenWidth - 80;
@@ -448,23 +447,22 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
             <View style={styles.headerCardTop}>
               <SeverityBadge severity={caseItem.severity} />
               <Text style={styles.caseId} numberOfLines={1}>
-                {caseItem.datasetLabel}
+                {caseItem.patientCode}
               </Text>
               <Text style={styles.elapsed}>
-                · {caseCreatedAt ? formatRelativeTime(caseCreatedAt) : '—'}
+                {caseCreatedAt ? formatRelativeTime(caseCreatedAt) : '—'}
               </Text>
             </View>
             <Text style={styles.caseTitle}>{caseItem.anomaly}</Text>
             <Text style={styles.caseSub}>
-              {caseItem.patientSex} · {caseItem.patientAge}y · Patient {caseItem.patientCode} · Signal {caseItem.signalQ}
+              {caseItem.patientSex} · {caseItem.patientAge}y · {caseItem.datasetLabel}
             </Text>
-
             <View style={styles.headerCtaRow}>
               <Button
                 label="Ask Alyna"
                 variant="secondary"
                 iconLeft="sparkle"
-                size="md"
+                size="sm"
                 onPress={() =>
                   navigation.navigate('Tabs', {
                     screen: 'Alyna',
@@ -472,11 +470,11 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
                   })
                 }
               />
-              <View style={{ width: theme.spacing.md }} />
+              <View style={{ width: theme.spacing.sm }} />
               <Button
-                label="Open TraceView"
+                label="TraceView"
                 iconLeft="trace"
-                size="md"
+                size="sm"
                 onPress={() =>
                   navigation.navigate('Tabs', {
                     screen: 'TraceView',
@@ -494,7 +492,7 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
             <View style={styles.headerMetricsGrid}>
               <MetricCard label="AI CONFIDENCE" value={caseItem.confidence} unit="%" icon="sparkle" large />
               <View style={styles.metricGap} />
-              <MetricCard label="SIGNAL" value={caseItem.signalQ} icon="activity" large />
+              <MetricCard label="RHYTHM" value={physiology?.recoveryNote ?? '—'} icon="activity" large />
             </View>
           </Card>
 
@@ -605,16 +603,16 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
                   <View style={[styles.riskBadge, {
                     backgroundColor:
                       aiAnalysis.risk_level === 'Critical' ? 'rgba(208,78,92,0.12)' :
-                      aiAnalysis.risk_level === 'High' ? 'rgba(245,158,11,0.12)' :
-                      aiAnalysis.risk_level === 'Moderate' ? 'rgba(59,130,246,0.12)' :
-                      'rgba(31,165,155,0.12)',
+                        aiAnalysis.risk_level === 'High' ? 'rgba(245,158,11,0.12)' :
+                          aiAnalysis.risk_level === 'Moderate' ? 'rgba(59,130,246,0.12)' :
+                            'rgba(31,165,155,0.12)',
                   }]}>
                     <Text style={[styles.riskBadgeText, {
                       color:
                         aiAnalysis.risk_level === 'Critical' ? theme.colors.danger :
-                        aiAnalysis.risk_level === 'High' ? '#F59E0B' :
-                        aiAnalysis.risk_level === 'Moderate' ? '#3B82F6' :
-                        theme.colors.success,
+                          aiAnalysis.risk_level === 'High' ? '#F59E0B' :
+                            aiAnalysis.risk_level === 'Moderate' ? '#3B82F6' :
+                              theme.colors.success,
                     }]}>
                       {aiAnalysis.risk_level} Risk · {aiAnalysis.risk_score ?? '—'}/100
                     </Text>
@@ -652,7 +650,29 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
             )}
           </Card>
 
-          {/* ── ECG History comparison table — redesigned ── */}
+          {/* ── History timeline — standalone card, matches web sequence ── */}
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>History timeline</Text>
+            {timeline.length === 0 ? (
+              <Text style={[styles.sectionMeta, { marginTop: theme.spacing.md }]}>
+                No history yet.
+              </Text>
+            ) : (
+              <View style={styles.timelineWrap}>
+                {timeline.map((t, i) => (
+                  <TimelineItem
+                    key={`${t.when}-${i}`}
+                    when={t.when}
+                    description={t.description}
+                    isFirst={i === 0}
+                    isLast={i === timeline.length - 1}
+                  />
+                ))}
+              </View>
+            )}
+          </Card>
+
+          {/* ── ECG history comparison table ── */}
           <Card style={styles.section}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.xs }}>
               <View style={{ flex: 1 }}>
@@ -667,10 +687,6 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
                 <ActivityIndicator size="small" color={theme.colors.primary} />
               )}
             </View>
-
-            {(() => {
-              return null;
-            })()}
             {comparisonRecords.length > 0 ? (
               <ECGComparisonTable
                 records={comparisonRecords}
@@ -687,71 +703,104 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
                     : 'No ECG records available.'}
               </Text>
             )}
-
-            {/* Case review timeline below table */}
-            {timeline.length > 0 && (
-              <>
-                <Text style={[styles.sectionTitle, { marginTop: theme.spacing.xl, fontSize: 14 }]}>
-                  Review events
-                </Text>
-                <View style={styles.timelineWrap}>
-                  {timeline.map((t, i) => (
-                    <TimelineItem
-                      key={`${t.when}-${i}`}
-                      when={t.when}
-                      description={t.description}
-                      isFirst={i === 0}
-                      isLast={i === timeline.length - 1}
-                    />
-                  ))}
-                </View>
-              </>
-            )}
           </Card>
 
-          {patientContext && (
+          {detail && (
             <Card style={styles.section}>
               <Text style={styles.sectionTitle}>Patient context</Text>
               <View style={styles.kvList}>
-                <Row label="Sex / Age" value={`${patientContext.sex} · ${patientContext.age}y`} />
-                <Row label="Comorbidities" value={patientContext.comorbidities} />
-                <Row label="Adherence" value={`${patientContext.adherencePct}%`} />
-                <Row label="Activity" value={patientContext.activity} />
-                <Row label="Sleep" value={patientContext.sleep} />
-                <Row label="Diet pattern" value={patientContext.dietPattern} />
-                <Row label="Smoking / Alcohol" value={patientContext.smokingAlcohol} last />
+                <Row
+                  label="Sex / Age"
+                  value={`${detail.patient.sex ?? '—'} · ${detail.patient.age ?? '—'}y`}
+                />
+                <Row
+                  label="Dataset"
+                  value={detail.patient.dataset_source_display || '—'}
+                />
+                <Row
+                  label="Diagnosis class"
+                  value={detail.patient.diagnosis_class ?? '—'}
+                />
+                {Boolean(detail.patient.extra_info?.blood_pressure) && (
+                  <Row
+                    label="Blood pressure"
+                    value={String(detail.patient.extra_info.blood_pressure)}
+                  />
+                )}
+                {Boolean(detail.patient.extra_info?.reason_for_admission) && (
+                  <Row
+                    label="Reason for admission"
+                    value={String(detail.patient.extra_info.reason_for_admission)}
+                  />
+                )}
+                {Boolean(detail.patient.extra_info?.smoker) && (
+                  <Row
+                    label="Smoker"
+                    value={String(detail.patient.extra_info.smoker)}
+                  />
+                )}
+                <Row
+                  label="All diagnoses"
+                  value={
+                    detail.patient.display_diagnosis ||
+                    detail.patient.all_diagnoses.join(', ') ||
+                    '—'
+                  }
+                  last
+                />
               </View>
             </Card>
           )}
-          {physiology && (
+          {detail && (
             <Card style={styles.section}>
               <Text style={styles.sectionTitle}>Physiology snapshot</Text>
-              <View style={styles.physRow}>
-                <View style={styles.physLeft}>
-                  <Text style={styles.physLabel}>Pulse</Text>
-                  <Text style={styles.physBaseline}>vs {physiology.pulse.baseline} baseline</Text>
-                </View>
-                <Text style={styles.physValue}>{physiology.pulse.value}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.physRow}>
-                <View style={styles.physLeft}>
-                  <Text style={styles.physLabel}>HRV</Text>
-                  <Text style={styles.physBaseline}>vs {physiology.hrv.baseline} baseline</Text>
-                </View>
-                <Text style={styles.physValue}>{physiology.hrv.value}{physiology.hrv.unit}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.physRow}>
-                <View style={styles.physLeft}>
-                  <Text style={styles.physLabel}>Recovery</Text>
-                  <Text style={styles.physBaseline}>{physiology.recoveryNote}</Text>
-                </View>
-                <Text style={styles.physValue}>{physiology.recovery}</Text>
+              <View style={styles.kvList}>
+                <Row
+                  label="Heart Rate"
+                  value={
+                    detail.vitals.heart_rate_bpm
+                      ? `${detail.vitals.heart_rate_bpm} bpm`
+                      : '—'
+                  }
+                />
+                <Row
+                  label="HR Range"
+                  value={
+                    detail.vitals.heart_rate_min && detail.vitals.heart_rate_max
+                      ? `${detail.vitals.heart_rate_min} – ${detail.vitals.heart_rate_max} bpm`
+                      : '—'
+                  }
+                />
+                <Row
+                  label="HRV (RMSSD)"
+                  value={
+                    detail.vitals.hrv_ms ? `${detail.vitals.hrv_ms} ms` : '—'
+                  }
+                />
+                <Row
+                  label="Rhythm"
+                  value={detail.vitals.rhythm ?? '—'}
+                />
+                <Row
+                  label="Beats detected"
+                  value={
+                    detail.vitals.num_beats
+                      ? String(detail.vitals.num_beats)
+                      : '—'
+                  }
+                />
+                <Row
+                  label="Signal quality"
+                  value={
+                    detail.vitals.quality_score
+                      ? `${(detail.vitals.quality_score * 100).toFixed(0)}%`
+                      : '—'
+                  }
+                  last
+                />
               </View>
             </Card>
           )}
-
           {/* Show ActionPath only for live/claimed cases */}
           {(isLive || isClaimed) && (
             <LinearGradient
@@ -825,6 +874,11 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
                     onPress={() => completeCase(notes || 'Marked as false positive.')}
                     disabled={isActioning}
                   />
+                  {actionError ? (
+                    <Text style={{ color: theme.colors.danger, marginTop: theme.spacing.sm, fontSize: 12, textAlign: 'center' }}>
+                      {actionError}
+                    </Text>
+                  ) : null}
                 </>
               )}
 

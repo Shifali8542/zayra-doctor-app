@@ -25,8 +25,6 @@ export const useTraceView = (
   const [waveformLoading, setWaveformLoading] = useState(false);
   const [selectedLead, setSelectedLead] = useState('II');
   const [viewMode, setViewMode] = useState<TraceViewMode>('strip');
-
-  // ── Case picker — shown when no patientId AND no caseId ───────────────────
   const showPicker = !explicitPatientId && !caseId;
 
   const [pickerMyCases, setPickerMyCases] = useState<CaseReview[]>([]);
@@ -67,11 +65,10 @@ export const useTraceView = (
         setPickerMyCount(myRes.count ?? 0);
         setPickerLiveCount(liveRes.count ?? 0);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setPickerLoading(false));
   }, [showPicker, pickerMyPage, pickerLivePage]);
 
-  // ── Resolve patientId from caseId when provided ───────────────────────────
   const caseDetailQ = useApi(
     () =>
       caseId
@@ -79,11 +76,11 @@ export const useTraceView = (
         : Promise.reject(new Error('no caseId')),
     [caseId],
   );
-
   const patientIdFromCase = caseDetailQ.data?.patient?.id;
   const patientId = explicitPatientId ?? patientIdFromCase ?? undefined;
+  const isResolvingPatient = Boolean(caseId && !patientIdFromCase && caseDetailQ.loading);
 
-  // ── Records index — lightweight DB call, no S3 ────────────────────────────
+  // Records index 
   const recordsIndexQ = useApi(
     () =>
       patientId
@@ -92,15 +89,12 @@ export const useTraceView = (
     [patientId],
   );
 
-  // ── Active record ─────────────────────────────────────────────────────────
+  // Active record
   const activeRecordId = useMemo(() => {
     if (selectedRecordId) return selectedRecordId;
     return recordsIndexQ.data?.records?.[0]?.id ?? undefined;
   }, [selectedRecordId, recordsIndexQ.data]);
 
-  // ── Waveform fetch with session cache ─────────────────────────────────────
-  // NOTE: No `channels` filter — backend uses mixed case per dataset
-  // ('ii' PTB Diagnostic vs 'II' PTB-XL). Fetch all, pick best client-side.
   const activeRecordIdRef = useRef(activeRecordId);
   activeRecordIdRef.current = activeRecordId;
 
@@ -136,7 +130,7 @@ export const useTraceView = (
     setSelectedLead('II');
   }, [activeRecordId]);
 
-  // ── Clinical info ─────────────────────────────────────────────────────────
+  // Clinical info 
   const clinicalQ = useApi(
     () =>
       patientId && activeRecordId
@@ -145,7 +139,7 @@ export const useTraceView = (
     [patientId, activeRecordId],
   );
 
-  // ── Waveform analysis (wave intervals, beat counts) ───────────────────────
+  // Waveform analysis 
   const analysisQ = useApi(
     () =>
       patientId && activeRecordId
@@ -154,7 +148,7 @@ export const useTraceView = (
     [patientId, activeRecordId],
   );
 
-  // ── Patient detail (header info) ──────────────────────────────────────────
+  // Patient detail
   const detailQ = useApi(
     () =>
       patientId
@@ -163,8 +157,8 @@ export const useTraceView = (
     [patientId],
   );
 
-  // ── Zoom / annotation helpers ─────────────────────────────────────────────
-  const zoomIn  = useCallback(
+  // Zoom / annotation helpers 
+  const zoomIn = useCallback(
     () => setZoom((z) => Math.min(MAX_ZOOM, +(z + 0.25).toFixed(2))),
     [],
   );
@@ -178,14 +172,14 @@ export const useTraceView = (
   const selectRecord = useCallback((id: number) => {
     setSelectedRecordId(id);
     setWaveformData(null);
-    setWaveformLoading(true); // prevent "No signal" flash between records
+    setWaveformLoading(true);
     setZoom(1);
   }, []);
 
-  const loadMoreMyCases   = useCallback(() => setPickerMyPage((p) => p + 1), []);
+  const loadMoreMyCases = useCallback(() => setPickerMyPage((p) => p + 1), []);
   const loadMoreLiveCases = useCallback(() => setPickerLivePage((p) => p + 1), []);
 
-  // ── Case item view model ──────────────────────────────────────────────────
+  // Case item view model
   const caseItem = useMemo(() => {
     const casePatient = caseDetailQ.data?.patient;
     const p = casePatient ?? detailQ.data;
@@ -197,43 +191,43 @@ export const useTraceView = (
       (p.dataset_source === 'ptb_xl'
         ? 'PTB-XL'
         : p.dataset_source === 'cpsc_2018'
-        ? 'CPSC 2018'
-        : p.dataset_source === 'georgia_12lead'
-        ? 'Georgia 12-Lead'
-        : p.dataset_source === 'ptb_diagnostic'
-        ? 'PTB Diagnostic'
-        : 'Unknown Dataset');
+          ? 'CPSC 2018'
+          : p.dataset_source === 'georgia_12lead'
+            ? 'Georgia 12-Lead'
+            : p.dataset_source === 'ptb_diagnostic'
+              ? 'PTB Diagnostic'
+              : 'Unknown Dataset');
     const caseCase = caseDetailQ.data?.case;
     return {
-      caseId:       `ZC-${code}`,
-      patientCode:  p.patient_code,
-      age:          p.age,
-      sex:          p.sex,
-      diagnosis:    (p as any).display_diagnosis || (p as any).diagnosis,
+      caseId: `ZC-${code}`,
+      patientCode: p.patient_code,
+      age: p.age,
+      sex: p.sex,
+      diagnosis: (p as any).display_diagnosis || (p as any).diagnosis,
       datasetLabel,
-      signalQ:      formatSignalQ(clinicalQ.data?.ecg_analysis?.quality_score ?? null),
-      severity:     (
+      signalQ: formatSignalQ(clinicalQ.data?.ecg_analysis?.quality_score ?? null),
+      severity: (
         cls === 'mi' ? 'CRITICAL' : cls === 'normal' ? 'ROUTINE' : 'URGENT'
       ) as Severity,
-      status:       caseCase?.status,
+      status: caseCase?.status,
       heartRateBpm: caseCase?.heart_rate_bpm,
     };
   }, [caseDetailQ.data, detailQ.data]);
 
-  // ── Rhythm summary ────────────────────────────────────────────────────────
+  // Rhythm summary
   const rhythm = useMemo(() => {
     const a = clinicalQ.data?.ecg_analysis ?? {};
     return {
-      rate:      typeof a.heart_rate_bpm === 'number' ? Math.round(a.heart_rate_bpm) : 0,
-      qrsWidth:  typeof a.qrs_width_ms   === 'number' ? Math.round(a.qrs_width_ms)   : 0,
-      qt:        typeof a.qt_ms          === 'number' ? Math.round(a.qt_ms)           : 0,
-      qtc:       typeof a.qtc_ms         === 'number' ? Math.round(a.qtc_ms)          : 0,
-      axis:      typeof a.axis_deg       === 'number' ? Math.round(a.axis_deg)        : 0,
+      rate: typeof a.heart_rate_bpm === 'number' ? Math.round(a.heart_rate_bpm) : 0,
+      qrsWidth: typeof a.qrs_width_ms === 'number' ? Math.round(a.qrs_width_ms) : 0,
+      qt: typeof a.qt_ms === 'number' ? Math.round(a.qt_ms) : 0,
+      qtc: typeof a.qtc_ms === 'number' ? Math.round(a.qtc_ms) : 0,
+      axis: typeof a.axis_deg === 'number' ? Math.round(a.axis_deg) : 0,
       bookmarks: [] as { label: string; offset: string }[],
     };
   }, [clinicalQ.data]);
 
-  // ── Available leads (from backend response) ────────────────────────────────
+  // Available leads
   const availableLeads = useMemo(() => {
     if (waveformData?.all_channel_names?.length) {
       return waveformData.all_channel_names;
@@ -241,7 +235,7 @@ export const useTraceView = (
     return waveformData?.channel_names ?? ['II'];
   }, [waveformData]);
 
-  // ── Primary samples — case-insensitive lead lookup ────────────────────────
+  // Primary samples 
   const primarySamples = useMemo(() => {
     if (!waveformData?.waveforms) return null;
     const w = waveformData.waveforms;
@@ -250,8 +244,8 @@ export const useTraceView = (
       w[selectedLead.toLowerCase()] ??
       w['II'] ??
       w['ii'] ??
-      w['I']  ??
-      w['i']  ??
+      w['I'] ??
+      w['i'] ??
       Object.values(w)[0] ??
       null
     );
@@ -274,7 +268,7 @@ export const useTraceView = (
     pickerLoading,
     loadMoreMyCases,
     loadMoreLiveCases,
-    hasMoreMyCases:   pickerMyCases.length < pickerMyCount,
+    hasMoreMyCases: pickerMyCases.length < pickerMyCount,
     hasMoreLiveCases: pickerLiveCases.length < pickerLiveCount,
 
     // Case / patient info
@@ -285,7 +279,7 @@ export const useTraceView = (
     primarySamples,
     allLeadSamples,
     effectiveSamplingRate: waveformData?.effective_sampling_rate ?? 125,
-    segments:              waveformData?.segments ?? {},
+    segments: waveformData?.segments ?? {},
     waveformData,
     waveformLoading,
 
@@ -299,14 +293,14 @@ export const useTraceView = (
     setViewMode,
 
     // Record tabs
-    records:           recordsIndexQ.data?.records ?? [],
-    totalRecords:      recordsIndexQ.data?.total_records ?? 0,
+    records: recordsIndexQ.data?.records ?? [],
+    totalRecords: recordsIndexQ.data?.total_records ?? 0,
     activeRecordId,
     activeRecordIndex: waveformData?.record_index ?? 0,
     selectRecord,
 
     // Waveform analysis card
-    analysis:        analysisQ.data ?? null,
+    analysis: analysisQ.data ?? null,
     analysisLoading: analysisQ.loading,
 
     // UI controls
@@ -317,9 +311,10 @@ export const useTraceView = (
     annotation,
     setAnnotation,
     saveAnnotation,
-
-    loading: (caseId ? caseDetailQ.loading : false) || recordsIndexQ.loading,
-    error:   patientId === undefined ? null : clinicalQ.error,
+    loading: isResolvingPatient || (caseId ? caseDetailQ.loading : false) || recordsIndexQ.loading,
+    error: (!isResolvingPatient && patientId === undefined && !showPicker)
+      ? 'Could not load case. Please go back and try again.'
+      : null,
 
     refetch: async () => {
       await Promise.all([

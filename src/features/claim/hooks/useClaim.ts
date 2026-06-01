@@ -263,6 +263,7 @@ export const useClaim = (caseId?: number) => {
 
   // Return
   return {
+    detail,
     caseItem,
     timeline,
     ecgRecords:        (recordsQ.data?.records ?? []) as ECGRecordHistoryItem[],

@@ -26,8 +26,9 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
   const styles = createTraceViewScreenStyles(theme);
   const { deviceType, width: screenWidth } = useResponsive();
   const patientId: number | undefined = route?.params?.patientId;
-  const caseId:    number | undefined = route?.params?.caseId;
-  const recordId:  number | undefined = route?.params?.recordId;
+  const caseId: number | undefined = route?.params?.caseId;
+  const recordId: number | undefined = route?.params?.recordId;
+  const hookKey = `${patientId ?? 'x'}-${caseId ?? 'x'}-${recordId ?? 'x'}`;
 
   const {
     showPicker,
@@ -50,13 +51,15 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
   const containerW = Math.min(getMaxContentWidth(deviceType), screenWidth) - 48;
   const stripWidth = Math.max(220, containerW * zoom);
   const stripHeight = 130;
-
   const handlePickerSelect = useCallback((c: CaseReview) => {
-    navigation.navigate('TraceView', { caseId: c.id });
+    navigation.getParent()?.navigate('Tabs', {
+      screen: 'TraceView',
+      params: { caseId: c.id },
+    });
   }, [navigation]);
 
   return (
-    <Layout scroll padded edges={['top']} bottomInsetExtra={92}>
+    <Layout scroll padded edges={['top']} bottomInsetExtra={92} key={hookKey}>
       <Header onProfilePress={() => navigation.navigate('Profile')} />
 
       <View style={styles.titleWrap}>
@@ -88,13 +91,21 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
       {!showPicker && loading ? (
         <View style={{ paddingVertical: 32, alignItems: 'center' }}>
           <ActivityIndicator color={theme.colors.primary} />
-          <Text style={{ marginTop: 12, color: theme.colors.textSecondary }}>Loading waveform…</Text>
+          <Text style={{ marginTop: 12, color: theme.colors.textSecondary }}>
+            Loading case…
+          </Text>
         </View>
       ) : !showPicker && error ? (
-        <View style={{ paddingVertical: 24 }}>
-          <Text style={{ color: theme.colors.danger, textAlign: 'center' }}>
-            Unable to load waveform. Please try again from a case.
+        <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+          <Text style={{ color: theme.colors.danger, textAlign: 'center', marginBottom: 12 }}>
+            {error}
           </Text>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={{ paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.divider }}
+          >
+            <Text style={{ color: theme.colors.textPrimary, fontSize: 14, fontWeight: '600' }}>Go back</Text>
+          </Pressable>
         </View>
       ) : !showPicker ? (
         <>
@@ -310,138 +321,138 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
           {/* Strip view */}
           {viewMode === 'strip' && (
             <>
-          {/* BEFORE strip */}
-          <View style={styles.strip}>
-            <View style={styles.stripHeader}>
-              <Text style={styles.stripLabel}>BEFORE</Text>
-              <Text style={styles.stripMeta}>
-                {segments.before
-                  ? `${segments.before.start_sec}s – ${segments.before.end_sec}s`
-                  : 'II · 25MM/S'}
-              </Text>
-            </View>
-            {waveformLoading ? (
-              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={theme.colors.primary} size="small" />
+              {/* BEFORE strip */}
+              <View style={styles.strip}>
+                <View style={styles.stripHeader}>
+                  <Text style={styles.stripLabel}>BEFORE</Text>
+                  <Text style={styles.stripMeta}>
+                    {segments.before
+                      ? `${segments.before.start_sec}s – ${segments.before.end_sec}s`
+                      : 'II · 25MM/S'}
+                  </Text>
+                </View>
+                {waveformLoading ? (
+                  <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator color={theme.colors.primary} size="small" />
+                  </View>
+                ) : segments.before ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <EcgWaveform
+                      width={Math.max(stripWidth, 500)}
+                      height={stripHeight}
+                      data={segments.before.samples}
+                      effectiveSamplingRate={effectiveSamplingRate}
+                      displaySeconds={30}
+                    />
+                  </ScrollView>
+                ) : (
+                  <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>No data</Text>
+                  </View>
+                )}
               </View>
-            ) : segments.before ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <EcgWaveform
-                  width={Math.max(stripWidth, 500)}
-                  height={stripHeight}
-                  data={segments.before.samples}
-                  effectiveSamplingRate={effectiveSamplingRate}
-                  displaySeconds={30}
-                />
-              </ScrollView>
-            ) : (
-              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>No data</Text>
-              </View>
-            )}
-          </View>
 
-          {/* DURING ANOMALY strip */}
-          <View style={[styles.strip, styles.stripHighlight]}>
-            <View style={styles.stripHeader}>
-              <Text style={styles.stripLabel}>DURING ANOMALY</Text>
-              <Text style={styles.stripMeta}>
-                {segments.anomaly
-                  ? `${segments.anomaly.start_sec}s – ${segments.anomaly.end_sec}s`
-                  : 'II · 25MM/S'}
-              </Text>
-            </View>
-            {waveformLoading ? (
-              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={theme.colors.primary} size="small" />
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 6 }}>
-                  {`ECG ${activeRecordIndex + 1} of ${totalRecords} · Loading…`}
-                </Text>
+              {/* DURING ANOMALY strip */}
+              <View style={[styles.strip, styles.stripHighlight]}>
+                <View style={styles.stripHeader}>
+                  <Text style={styles.stripLabel}>DURING ANOMALY</Text>
+                  <Text style={styles.stripMeta}>
+                    {segments.anomaly
+                      ? `${segments.anomaly.start_sec}s – ${segments.anomaly.end_sec}s`
+                      : 'II · 25MM/S'}
+                  </Text>
+                </View>
+                {waveformLoading ? (
+                  <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator color={theme.colors.primary} size="small" />
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 6 }}>
+                      {`ECG ${activeRecordIndex + 1} of ${totalRecords} · Loading…`}
+                    </Text>
+                  </View>
+                ) : segments.anomaly ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <EcgWaveform
+                      width={Math.max(stripWidth, 500)}
+                      height={stripHeight}
+                      data={segments.anomaly.samples}
+                      effectiveSamplingRate={effectiveSamplingRate}
+                      displaySeconds={30}
+                      strokeColor={theme.colors.pulseRed}
+                    />
+                  </ScrollView>
+                ) : (
+                  <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>No data</Text>
+                  </View>
+                )}
               </View>
-            ) : segments.anomaly ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <EcgWaveform
-                  width={Math.max(stripWidth, 500)}
-                  height={stripHeight}
-                  data={segments.anomaly.samples}
-                  effectiveSamplingRate={effectiveSamplingRate}
-                  displaySeconds={30}
-                  strokeColor={theme.colors.pulseRed}
-                />
-              </ScrollView>
-            ) : (
-              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>No data</Text>
-              </View>
-            )}
-          </View>
 
-          {/* AFTER strip */}
-          <View style={styles.strip}>
-            <View style={styles.stripHeader}>
-              <Text style={styles.stripLabel}>AFTER</Text>
-              <Text style={styles.stripMeta}>
-                {segments.after
-                  ? `${segments.after.start_sec}s – ${segments.after.end_sec}s`
-                  : 'II · 25MM/S'}
-              </Text>
-            </View>
-            {waveformLoading ? (
-              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={theme.colors.primary} size="small" />
+              {/* AFTER strip */}
+              <View style={styles.strip}>
+                <View style={styles.stripHeader}>
+                  <Text style={styles.stripLabel}>AFTER</Text>
+                  <Text style={styles.stripMeta}>
+                    {segments.after
+                      ? `${segments.after.start_sec}s – ${segments.after.end_sec}s`
+                      : 'II · 25MM/S'}
+                  </Text>
+                </View>
+                {waveformLoading ? (
+                  <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator color={theme.colors.primary} size="small" />
+                  </View>
+                ) : segments.after ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <EcgWaveform
+                      width={Math.max(stripWidth, 500)}
+                      height={stripHeight}
+                      data={segments.after.samples}
+                      effectiveSamplingRate={effectiveSamplingRate}
+                      displaySeconds={30}
+                    />
+                  </ScrollView>
+                ) : (
+                  <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>No data</Text>
+                  </View>
+                )}
               </View>
-            ) : segments.after ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <EcgWaveform
-                  width={Math.max(stripWidth, 500)}
-                  height={stripHeight}
-                  data={segments.after.samples}
-                  effectiveSamplingRate={effectiveSamplingRate}
-                  displaySeconds={30}
-                />
-              </ScrollView>
-            ) : (
-              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>No data</Text>
-              </View>
-            )}
-          </View>
 
-          <View style={styles.strip}>
-            <View style={styles.stripHeader}>
-              <Text style={styles.stripLabel}>
-                {totalRecords > 0
-                  ? `ECG ${activeRecordIndex + 1} OF ${totalRecords} · LEAD ${selectedLead}`
-                  : `LEAD ${selectedLead}`}
-              </Text>
-              <Text style={styles.stripMeta}>25MM/S · 10MM/MV</Text>
-            </View>
+              <View style={styles.strip}>
+                <View style={styles.stripHeader}>
+                  <Text style={styles.stripLabel}>
+                    {totalRecords > 0
+                      ? `ECG ${activeRecordIndex + 1} OF ${totalRecords} · LEAD ${selectedLead}`
+                      : `LEAD ${selectedLead}`}
+                  </Text>
+                  <Text style={styles.stripMeta}>25MM/S · 10MM/MV</Text>
+                </View>
 
-            {waveformLoading ? (
-              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={theme.colors.primary} size="small" />
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 6 }}>
-                  Loading signal…
-                </Text>
+                {waveformLoading ? (
+                  <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator color={theme.colors.primary} size="small" />
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 6 }}>
+                      Loading signal…
+                    </Text>
+                  </View>
+                ) : primarySamples ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <EcgWaveform
+                      width={Math.max(stripWidth, 600)}
+                      height={stripHeight}
+                      data={primarySamples}
+                      effectiveSamplingRate={effectiveSamplingRate}
+                      displaySeconds={10 * zoom}
+                    />
+                  </ScrollView>
+                ) : (
+                  <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                      No signal data available
+                    </Text>
+                  </View>
+                )}
               </View>
-            ) : primarySamples ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <EcgWaveform
-                  width={Math.max(stripWidth, 600)}
-                  height={stripHeight}
-                  data={primarySamples}
-                  effectiveSamplingRate={effectiveSamplingRate}
-                  displaySeconds={10 * zoom}
-                />
-              </ScrollView>
-            ) : (
-              <View style={{ height: stripHeight, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                  No signal data available
-                </Text>
-              </View>
-            )}
-          </View>
             </>
           )}
 
@@ -502,29 +513,44 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
             </Card>
           )}
 
-       <Card style={{ marginTop: theme.spacing.md }}>
-            <Text style={styles.cardTitle}>Rhythm summary</Text>
-            <View style={styles.kvRow}><Text style={styles.kvLabel}>Rate</Text><Text style={styles.kvValue}>{rhythm.rate > 0 ? `${rhythm.rate} bpm` : '—'}</Text></View>
-            <View style={styles.kvRow}><Text style={styles.kvLabel}>QRS width</Text><Text style={styles.kvValue}>{rhythm.qrsWidth > 0 ? `${rhythm.qrsWidth} ms` : '—'}</Text></View>
-            <View style={styles.kvRow}><Text style={styles.kvLabel}>QT / QTc</Text><Text style={styles.kvValue}>{rhythm.qt > 0 ? `${rhythm.qt} / ${rhythm.qtc} ms` : '—'}</Text></View>
-            <View style={[styles.kvRow, { borderBottomWidth: 0 }]}><Text style={styles.kvLabel}>Axis</Text><Text style={styles.kvValue}>{rhythm.axis !== 0 ? `${rhythm.axis}°` : '—'}</Text></View>
-          </Card>
+          {(segments.before || segments.anomaly || segments.after) && (() => {
+            const onsetSec = segments.anomaly?.start_sec ?? null;
+            const peakSec = onsetSec !== null && segments.anomaly?.end_sec != null
+              ? Math.round((onsetSec + segments.anomaly.end_sec) / 2)
+              : null;
+            const resolSec = segments.after?.start_sec ?? segments.anomaly?.end_sec ?? null;
+
+            const bookmarks: { label: string; offsetSec: number | null }[] = [
+              { label: 'Onset', offsetSec: onsetSec },
+              { label: 'Peak', offsetSec: peakSec },
+              { label: 'Resolution', offsetSec: resolSec },
+            ].filter((b) => b.offsetSec !== null);
+
+            if (bookmarks.length === 0) return null;
+
+            return (
+              <Card style={{ marginTop: theme.spacing.lg }}>
+                <Text style={styles.cardTitle}>Event bookmarks</Text>
+                {bookmarks.map((b, i) => (
+                  <Pressable
+                    key={i}
+                    style={({ pressed }) => [styles.bookmarkRow, pressed && { opacity: 0.7 }]}
+                  >
+                    <Text style={styles.bookmarkLabel}>
+                      {b.label}{' '}
+                      <Text style={{ color: theme.colors.textTertiary }}>
+                        T+{b.offsetSec}s
+                      </Text>
+                    </Text>
+                    <Text style={styles.bookmarkJump}>jump →</Text>
+                  </Pressable>
+                ))}
+              </Card>
+            );
+          })()}
 
           <Card style={{ marginTop: theme.spacing.lg }}>
-            <Text style={styles.cardTitle}>Event bookmarks</Text>
-            {rhythm.bookmarks.map((b) => (
-              <Pressable
-                key={b.label}
-                style={({ pressed }) => [styles.bookmarkRow, pressed && { opacity: 0.7 }]}
-              >
-                <Text style={styles.bookmarkLabel}>{b.label} {b.offset}</Text>
-                <Text style={styles.bookmarkJump}>jump →</Text>
-              </Pressable>
-            ))}
-          </Card>
-
-          <Card style={{ marginTop: theme.spacing.lg }}>
-            <Text style={styles.cardTitle}>Annotations</Text>
+            <Text style={styles.cardTitle}>Annotation</Text>
             <View style={styles.annotationBox}>
               <TextInput
                 placeholder="Add a clinician note for this strip…"
@@ -543,7 +569,7 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
               style={{ marginTop: theme.spacing.md }}
             />
           </Card>
-       </>
+        </>
       ) : null}
     </Layout>
   );

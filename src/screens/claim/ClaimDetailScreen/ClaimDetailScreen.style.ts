@@ -31,7 +31,7 @@ export const createClaimDetailScreenStyles = (theme: AppTheme) =>
     elapsed: {
       ...theme.typography.bodySmall,
       color: theme.colors.textTertiary,
-      marginLeft: theme.spacing.sm,
+      marginLeft: 'auto',
     },
     caseTitle: {
       ...theme.typography.h1,
@@ -48,6 +48,8 @@ export const createClaimDetailScreenStyles = (theme: AppTheme) =>
     headerCtaRow: {
       flexDirection: 'row',
       marginBottom: theme.spacing.lg,
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
     },
     headerMetricsGrid: {
       flexDirection: 'row',

@@ -87,22 +87,6 @@ export const createTraceViewScreenStyles = (theme: AppTheme) =>
       fontWeight: '700',
       marginBottom: theme.spacing.md,
     },
-    kvRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: theme.spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.divider,
-    },
-    kvLabel: {
-      ...theme.typography.body,
-      color: theme.colors.textSecondary,
-      flex: 1,
-    },
-    kvValue: {
-      ...theme.typography.bodyStrong,
-      color: theme.colors.textPrimary,
-    },
 
     bookmarkRow: {
       flexDirection: 'row',
