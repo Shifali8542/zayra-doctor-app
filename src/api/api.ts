@@ -1,5 +1,7 @@
 import type {
   AIAnalysisEnvelope,
+  AlynaChatResponse,
+  AlynaHistoryMessage,
   AuthTokens,
   CaseDetailFull,
   CaseReview,
@@ -22,7 +24,6 @@ import type {
 
 export const API_BASE_URL = 'http://192.168.1.172:8000/api/v1';
 
-/** Endpoint catalog — every URL the app talks to lives here. */
 export const ENDPOINTS = {
   // Auth
   login: '/auth/login/',
@@ -68,6 +69,11 @@ export const ENDPOINTS = {
   // Impact
   impactStats: '/impact/stats/',
   impactMoments: '/impact/moments/',
+
+  // Alyna
+  alynaChat:    '/alyna/chat/',
+  alynaHistory: '/alyna/history/',
+  alynaClear:   '/alyna/clear/',
 } as const;
 
 // Token store (in-memory)
@@ -376,6 +382,33 @@ export const impactApi = {
   moments: () => request<ImpactMomentsResponse>(ENDPOINTS.impactMoments),
 };
 
+// ALYNA API
+export const alynaApi = {
+  chat: (
+    message: string,
+    opts?: { patient_id?: number; case_id?: number },
+  ) =>
+    request<AlynaChatResponse>(ENDPOINTS.alynaChat, {
+      method: 'POST',
+      body: {
+        message,
+        ...(opts?.patient_id ? { patient_id: opts.patient_id } : {}),
+        ...(opts?.case_id    ? { case_id:    opts.case_id    } : {}),
+      },
+    }),
+
+  history: (opts?: { patient_id?: number; case_id?: number }) =>
+    request<AlynaHistoryMessage[]>(ENDPOINTS.alynaHistory, {
+      query: {
+        ...(opts?.patient_id ? { patient_id: opts.patient_id } : {}),
+        ...(opts?.case_id    ? { case_id:    opts.case_id    } : {}),
+      },
+    }),
+
+  clear: () =>
+    request<{ cleared: number }>(ENDPOINTS.alynaClear, { method: 'DELETE' }),
+};
+
 // STATS API
 export const statsApi = {
   splitStats: () => request<SplitStatsResponse>(ENDPOINTS.patientSplitStats),
@@ -384,7 +417,6 @@ export const statsApi = {
 };
 
 // Default export
-
 export const api = {
   auth: authApi,
   patients: patientsApi,
@@ -392,6 +424,7 @@ export const api = {
   cases: casesApi,
   impact: impactApi,
   stats: statsApi,
+  alyna: alynaApi,
   setAuthTokens,
   getAccessToken,
   getRefreshToken,

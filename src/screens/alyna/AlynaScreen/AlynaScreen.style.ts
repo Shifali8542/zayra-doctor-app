@@ -97,6 +97,19 @@ export const createAlynaScreenStyles = (theme: AppTheme) =>
       color: theme.colors.textPrimary,
     },
 
+    errorText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.danger ?? '#DC2626',
+      marginBottom: theme.spacing.md,
+    },
+    clearBtn: {
+      alignSelf: 'flex-end',
+      marginTop: theme.spacing.md,
+    },
+    clearText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textTertiary,
+    },
     inputRow: {
       flexDirection: 'row',
       alignItems: 'center',

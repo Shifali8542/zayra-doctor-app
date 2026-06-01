@@ -17,10 +17,10 @@ export const StatBadge: React.FC<StatBadgeProps> = ({ icon, label, value }) => {
   return (
     <View style={styles.pill}>
       <View style={styles.iconCircle}>
-        <Icon name={icon} size={14} color={theme.colors.textOnDark} strokeWidth={2} />
+        <Icon name={icon} size={11} color={theme.colors.textOnDark} strokeWidth={2} />
       </View>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
+      <Text style={styles.label} numberOfLines={1} ellipsizeMode="tail">{label}</Text>
+      <Text style={styles.value} numberOfLines={1}>{value}</Text>
     </View>
   );
 };

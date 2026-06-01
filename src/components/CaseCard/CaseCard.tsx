@@ -38,7 +38,7 @@ export const CaseCard: React.FC<CaseCardProps> = React.memo(({
         <View style={styles.headerRow}>
           <SeverityBadge severity={caseItem.severity} />
           <Text style={styles.caseId} numberOfLines={1}>
-            {caseItem.datasetLabel}
+            {caseItem.patientCode}
           </Text>
           <View style={styles.timeWrap}>
             <Icon name="clock" size={13} color={theme.colors.textTertiary} strokeWidth={1.8} />
@@ -51,7 +51,7 @@ export const CaseCard: React.FC<CaseCardProps> = React.memo(({
 
         <Text style={styles.anomalyTitle}>{caseItem.anomaly}</Text>
         <Text style={styles.patientLine}>
-          {caseItem.patientSex} · {caseItem.patientAge}y · {caseItem.patientId}
+          {caseItem.patientSex} · {caseItem.patientAge}y · {caseItem.patientCode}
         </Text>
 
         <WaveformPlaceholder seed={seedFromId} style={styles.waveform} />
@@ -88,12 +88,12 @@ export const CaseCard: React.FC<CaseCardProps> = React.memo(({
                 {caseItem.datasetLabel}
               </Text>
             </View>
-            {caseItem.signalQ !== 'Q—' && (
+            {caseItem.recordName ? (
               <View style={[styles.iconRow, { marginLeft: 10 }]}>
                 <Icon name="trace" size={13} color={theme.colors.textTertiary} strokeWidth={1.8} />
-                <Text style={styles.footerText}>{caseItem.signalQ}</Text>
+                <Text style={styles.footerText} numberOfLines={1}>{caseItem.recordName}</Text>
               </View>
-            )}
+            ) : null}
           </View>
           {showClaim && caseItem.status === 'live' ? (
             <Button
@@ -102,9 +102,9 @@ export const CaseCard: React.FC<CaseCardProps> = React.memo(({
               onPress={onClaim}
               iconRight="chevron-right"
             />
-          ) : caseItem.status === 'claimed' && caseItem.patientCode ? (
+          ) : caseItem.status === 'claimed' ? (
             <Text style={[styles.footerText, { color: theme.colors.primary, fontWeight: '700' }]}>
-              Claimed
+              {caseItem.doctorName ? `Dr. ${caseItem.doctorName}` : 'Claimed'}
             </Text>
           ) : null}
         </View>

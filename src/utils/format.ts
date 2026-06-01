@@ -25,3 +25,10 @@ export const formatRelativeMinutes = (minutes: number): string => {
 export const formatSeconds = (sec: number): string => `${sec}s`;
 export const formatCurrency = (val: number): string => `$${val}`;
 export const formatPct = (val: number): string => `${val}%`;
+
+export const getTimeGreeting = (): string => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 17) return 'Good Afternoon';
+  return 'Good Evening';
+};

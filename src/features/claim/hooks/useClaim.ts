@@ -165,6 +165,7 @@ export const useClaim = (caseId?: number) => {
       patientAge: p.age ?? 0,
       patientCode: p.patient_code,
       hr:         v.heart_rate_bpm ? Math.round(v.heart_rate_bpm) : null,
+      hrDelta:    null,
       hrv:        v.hrv_ms ? Math.round(v.hrv_ms) : null,
       confidence: detail.orinn?.risk_score ?? c.confidence_score ?? 0,
       signalQ:    v.quality_score ? `Q${Math.round(v.quality_score)}` : 'Q—',
@@ -173,8 +174,11 @@ export const useClaim = (caseId?: number) => {
         ? Math.round((Date.now() - new Date(c.created_at).getTime()) / 60000)
         : 0,
       status:      c.status as CaseViewModel['status'],
-      datasetSource: p.dataset_source,
+      datasetSource: p.dataset_source ?? undefined,
       datasetLabel:  p.dataset_source_display || '—',
+      doctorName:    null,
+      recordName:    null,
+      notes:         null,
     };
   }, [detail]);
 

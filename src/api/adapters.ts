@@ -128,7 +128,7 @@ export const patientListItemToCase = (
     viewing: opts.viewing ?? 0,
     ageMinutes: opts.ageMinutes ?? 0,
     status: opts.status ?? 'live',
-    datasetSource: p.dataset_source,
+    datasetSource: p.dataset_source ?? undefined,
     datasetLabel: formatDatasetLabel(p.dataset_source, p.dataset_source_display),
   };
 };
@@ -193,8 +193,11 @@ export const caseReviewToViewModel = (c: CaseReview): CaseViewModel => {
     ageMinutes,
     status: (c.status === 'missed' || c.status === 'escalated' ? 'completed' : c.status) as CaseViewModel['status'],
     hrv: c.hrv_ms ?? null,
-    datasetSource: c.dataset_source,
+    datasetSource: c.dataset_source ?? undefined,
     datasetLabel: c.dataset_source_display || '—',
+    doctorName: c.doctor_name ?? null,
+    recordName: c.record_name ?? null,
+    notes: c.notes ?? null,
   };
 };
 

@@ -3,36 +3,40 @@ import { AppTheme } from '../../theme/theme';
 
 export const createStatBadgeStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    pill: {
+   pill: {
       flexDirection: 'row',
       alignItems: 'center',
+      flex: 1,
+      height: 36,
       backgroundColor: 'rgba(255,255,255,0.10)',
       borderRadius: theme.radii.pill,
       paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.sm,
+      paddingVertical: 0,
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.16)',
+      gap: 4,
+      overflow: 'hidden',
     },
     iconCircle: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
       backgroundColor: 'rgba(255,255,255,0.16)',
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: theme.spacing.md,
+      flexShrink: 0,
     },
     label: {
-      ...theme.typography.bodyStrong,
-      color: theme.colors.textOnDark,
-      flex: 1,
-      fontSize: theme.fonts.sizes.lg,
+      color: 'rgba(255,255,255,0.75)',
+      fontSize: 10,
+      lineHeight: 13,
+      flexShrink: 1,
+      flexGrow: 1,
     },
     value: {
-      ...theme.typography.bodyStrong,
       color: theme.colors.textOnDark,
-      marginRight: theme.spacing.lg,
-      fontSize: theme.fonts.sizes.lg,
+      fontSize: 11,
       fontWeight: '700',
+      flexShrink: 0,
     },
   });

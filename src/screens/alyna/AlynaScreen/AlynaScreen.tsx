@@ -25,7 +25,7 @@ export const AlynaScreen: React.FC<AlynaScreenProps> = ({ navigation, route }) =
   const theme = useAppTheme();
   const styles = createAlynaScreenStyles(theme);
   const patientId: number | undefined = route?.params?.patientId;
-  const { messages, draft, setDraft, send } = useAlyna(patientId);
+  const { messages, suggestions, draft, setDraft, send, clear, loading, error } = useAlyna({ patientId });
 
   return (
     <Layout scroll padded edges={['top']} bottomInsetExtra={92}>
@@ -46,6 +46,29 @@ export const AlynaScreen: React.FC<AlynaScreenProps> = ({ navigation, route }) =
         </View>
 
         <View style={styles.convoCard}>
+
+          {/* Empty state */}
+          {messages.length === 0 && !loading ? (
+            <View style={styles.bubbleAssistantWrap}>
+              <View style={styles.bubbleAssistant}>
+                <Text style={styles.bubbleAssistantText}>
+                  Hello Doctor 👋 I'm Alyna, your clinical AI assistant. I can help you understand ECG findings, explain metrics like QTc and HRV, and walk you through any patient case. How can I help you today?
+                </Text>
+                <View style={styles.suggestionsWrap}>
+                  {['Explain QTc', 'What does HRV mean?', 'Summarise this case'].map((chip) => (
+                    <Pressable
+                      key={chip}
+                      onPress={() => send(chip)}
+                      style={styles.suggestionChip}
+                    >
+                      <Text style={styles.suggestionText}>{chip}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            </View>
+          ) : null}
+
           {messages.map((m) => {
             if (m.role === 'assistant') {
               return (
@@ -80,6 +103,35 @@ export const AlynaScreen: React.FC<AlynaScreenProps> = ({ navigation, route }) =
             );
           })}
 
+          {/* Suggestion chips */}
+          {!loading && suggestions.length > 0 ? (
+            <View style={styles.suggestionsWrap}>
+              {suggestions.map((s) => (
+                <Pressable
+                  key={s}
+                  onPress={() => send(s)}
+                  style={styles.suggestionChip}
+                >
+                  <Text style={styles.suggestionText}>{s}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
+          {/* Loading indicator */}
+          {loading ? (
+            <View style={styles.bubbleAssistantWrap}>
+              <View style={styles.bubbleAssistant}>
+                <Text style={styles.bubbleAssistantText}>Alyna is thinking…</Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Error banner */}
+          {error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : null}
+
           <View style={styles.inputRow}>
             <TextInput
               placeholder="Ask Alyna about this case…"
@@ -92,11 +144,19 @@ export const AlynaScreen: React.FC<AlynaScreenProps> = ({ navigation, route }) =
             />
             <Pressable
               onPress={() => send()}
-              style={({ pressed }) => [styles.sendBtn, pressed && { opacity: 0.85 }]}
+              disabled={loading}
+              style={({ pressed }) => [styles.sendBtn, pressed && { opacity: 0.85 }, loading && { opacity: 0.4 }]}
             >
               <Icon name="send" size={16} color={theme.colors.textOnDark} strokeWidth={2.4} />
             </Pressable>
           </View>
+
+          {/* Clear conversation */}
+          {messages.length > 0 ? (
+            <Pressable onPress={clear} style={styles.clearBtn}>
+              <Text style={styles.clearText}>Clear conversation</Text>
+            </Pressable>
+          ) : null}
         </View>
       </KeyboardAvoidingView>
     </Layout>

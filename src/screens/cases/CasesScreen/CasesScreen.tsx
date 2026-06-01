@@ -45,22 +45,6 @@ import { formatRelativeTime } from '../../../utils/format';
 import type { AppTheme } from '../../../theme/theme';
 import type { CaseViewModel, CasesTab } from '../../../types';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
-
-const DATASET_CHIPS: { label: string; value: string }[] = [
-  { label: 'All',             value: '' },
-  { label: 'PTB Diagnostic',  value: 'ptb_diagnostic' },
-  { label: 'PTB-XL',         value: 'ptb_xl' },
-  { label: 'CPSC 2018',       value: 'cpsc_2018' },
-  { label: 'Georgia 12-Lead', value: 'georgia_12lead' },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Sub-components — stable, defined outside CasesScreen
-// ─────────────────────────────────────────────────────────────────────────────
-
 const Tab: React.FC<{
   label: string;
   count: number;
@@ -96,8 +80,8 @@ const SearchResultRow: React.FC<{
     item.severity === 'CRITICAL'
       ? theme.colors.danger
       : item.severity === 'URGENT'
-      ? '#F59E0B'
-      : theme.colors.success;
+        ? '#F59E0B'
+        : theme.colors.success;
 
   return (
     <Pressable
@@ -176,25 +160,20 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
     error,
     search,
     onSearch,
-    datasetFilter,
-    onDatasetFilter,
     loadMore,
     refetch,
   } = useCases();
 
   // Derived values
-
   const isSearching = search.trim().length > 0;
-  const isTableTab  = activeTab !== 'live' && activeTab !== 'claimed';
-
-  const activeChip = datasetFilter;
+  const isTableTab = activeTab !== 'live' && activeTab !== 'claimed';
 
   const tabs = useMemo<{ key: CasesTab; label: string; count: number }[]>(
     () => [
-      { key: 'live',      label: 'Live',      count: counts.live },
-      { key: 'claimed',   label: 'Claimed',   count: counts.claimed },
+      { key: 'live', label: 'Live', count: counts.live },
+      { key: 'claimed', label: 'Claimed', count: counts.claimed },
       { key: 'completed', label: 'Completed', count: counts.completed },
-      { key: 'missed',    label: 'Missed',    count: counts.missed },
+      { key: 'missed', label: 'Missed', count: counts.missed },
       { key: 'escalated', label: 'Escalated', count: counts.escalated },
     ],
     [
@@ -264,11 +243,11 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
             {item.patientCode}
           </Text>
 
-          <View style={{ flex: 1.8 }}>
+          <View style={{ flex: 1.6 }}>
             <Text style={styles.completedAnomaly} numberOfLines={1}>
               {item.anomaly}
             </Text>
-            <Text style={styles.completedPatient}>
+            <Text style={styles.completedPatient} numberOfLines={1}>
               {item.patientSex} · {item.patientAge}y · {item.datasetLabel}
             </Text>
           </View>
@@ -278,14 +257,21 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
           </View>
 
           <Text
-            style={[styles.completedCaseId, { flex: 0.9, textAlign: 'right' }]}
+            style={[styles.completedCaseId, { flex: 0.8, textAlign: 'right' }]}
             numberOfLines={1}
           >
             {item.ageMinutes > 0
               ? formatRelativeTime(
-                  new Date(Date.now() - item.ageMinutes * 60000).toISOString(),
-                )
+                new Date(Date.now() - item.ageMinutes * 60000).toISOString(),
+              )
               : '—'}
+          </Text>
+
+          <Text
+            style={[styles.completedCaseId, { flex: 1, textAlign: 'right', color: theme.colors.textSecondary }]}
+            numberOfLines={1}
+          >
+            {item.notes || '—'}
           </Text>
         </Pressable>
       );
@@ -347,11 +333,6 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
         paddingTop: insets.top,
       }}
     >
-      {/* ══════════════════════════════════════════════════════════════════
-          FIXED HEADER — completely outside FlatList.
-          All horizontal ScrollViews live here.
-          Zero chance of nested-ScrollView-in-ListHeaderComponent crash.
-          ══════════════════════════════════════════════════════════════════ */}
       <View style={{ paddingHorizontal: theme.spacing.lg }}>
 
         <Header onProfilePress={() => navigation.navigate('Profile')} />
@@ -362,7 +343,34 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
           style={{ marginTop: theme.spacing.lg }}
         />
 
-        {/* ── Status tabs ────────────────────────────────────────────── */}
+        {/* Search bar */}
+        <View style={styles.searchWrap}>
+          <Icon name="search" size={16} color={theme.colors.textTertiary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by anomaly, dataset, patient code…"
+            placeholderTextColor={theme.colors.textTertiary}
+            value={search}
+            onChangeText={onSearch}
+            returnKeyType="search"
+            clearButtonMode="never"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          <View style={{ width: 28, alignItems: 'center' }}>
+            {search.length > 0 ? (
+              <Pressable onPress={() => onSearch('')} hitSlop={8}>
+                <Icon
+                  name="close-circle"
+                  size={16}
+                  color={theme.colors.textTertiary}
+                />
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Status tabs */}
         <View style={styles.tabsWrap}>
           <ScrollView
             horizontal
@@ -382,65 +390,7 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
           </ScrollView>
         </View>
 
-        {/* Dataset filter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsScroll}
-          style={{ marginBottom: theme.spacing.md }}
-        >
-         {DATASET_CHIPS.map((chip) => (
-            <Pressable
-              key={chip.value}
-              onPress={() => onDatasetFilter(chip.value)}
-              style={({ pressed }) => [
-                styles.chip,
-                styles.chipGap,
-                activeChip === chip.value && styles.chipActive,
-                pressed && { opacity: 0.75 },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  activeChip === chip.value && styles.chipTextActive,
-                ]}
-              >
-                {chip.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        {/* ── Search bar ─────────────────────────────────────────────── */}
-        <View style={styles.searchWrap}>
-          <Icon name="search" size={16} color={theme.colors.textTertiary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by anomaly, dataset, patient code…"
-            placeholderTextColor={theme.colors.textTertiary}
-            value={search}
-            onChangeText={onSearch}
-            returnKeyType="search"
-            clearButtonMode="never"
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {/* Fixed width slot — prevents child count change on show/hide */}
-          <View style={{ width: 28, alignItems: 'center' }}>
-            {search.length > 0 ? (
-              <Pressable onPress={() => onSearch('')} hitSlop={8}>
-                <Icon
-                  name="close-circle"
-                  size={16}
-                  color={theme.colors.textTertiary}
-                />
-              </Pressable>
-            ) : null}
-          </View>
-        </View>
-
-        {/* ── Search result count ─────────────────────────────────────── */}
+        {/* Search result */}
         {isSearching && data.length > 0 ? (
           <Text
             style={{
@@ -468,29 +418,14 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
           >
             <View style={styles.completedHeaderRow}>
               <Text style={[styles.completedHeader, { flex: 1 }]}>CASE</Text>
-              <Text style={[styles.completedHeader, { flex: 1.8 }]}>
-                ANOMALY
-              </Text>
-              <Text style={[styles.completedHeader, { flex: 0.8 }]}>
-                SEVERITY
-              </Text>
-              <Text
-                style={[
-                  styles.completedHeader,
-                  { flex: 0.9, textAlign: 'right' },
-                ]}
-              >
-                WHEN
-              </Text>
+              <Text style={[styles.completedHeader, { flex: 1.6 }]}>ANOMALY</Text>
+              <Text style={[styles.completedHeader, { flex: 0.8 }]}>SEVERITY</Text>
+              <Text style={[styles.completedHeader, { flex: 0.8, textAlign: 'right' }]}>WHEN</Text>
+              <Text style={[styles.completedHeader, { flex: 1, textAlign: 'right' }]}>OUTCOME</Text>
             </View>
           </Card>
         ) : null}
       </View>
-
-      {/* ══════════════════════════════════════════════════════════════════
-          FLATLIST — items only. No ListHeaderComponent.
-          This is the key change that permanently fixes the Android crash.
-          ══════════════════════════════════════════════════════════════════ */}
       <FlatList
         data={data}
         keyExtractor={(item) => item.id}

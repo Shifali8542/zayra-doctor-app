@@ -1,123 +1,104 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../../api/api';
-import { aiAnalysisToAlynaSeed } from '../../../api/adapters';
 import type { AlynaMessageViewModel } from '../../../types';
 
-export const useAlyna = (explicitPatientId?: number) => {
-  const [messages, setMessages] = useState<AlynaMessageViewModel[]>([]);
-  const [draft, setDraft] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [resolvedPatientId, setResolvedPatientId] = useState<number | undefined>(
-    explicitPatientId,
-  );
+interface UseAlynaOptions {
+  patientId?: number;
+  caseId?: number;
+}
 
+export const useAlyna = (opts: UseAlynaOptions = {}) => {
+  const [messages,    setMessages]    = useState<AlynaMessageViewModel[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [draft,       setDraft]       = useState('');
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
+  const hasFetchedHistory             = useRef(false);
+
+  // ── Load history once on mount ────────────────────────────────────────────
   useEffect(() => {
-    if (explicitPatientId) {
-      setResolvedPatientId(explicitPatientId);
-      return;
-    }
-    let cancelled = false;
-    api.patients
-      .list({ diagnosis: 'mi', page_size: 1 })
-      .then((res) => {
-        if (cancelled) return;
-        setResolvedPatientId(res.results?.[0]?.id);
+    if (hasFetchedHistory.current) return;
+    hasFetchedHistory.current = true;
+
+    api.alyna
+      .history({ patient_id: opts.patientId, case_id: opts.caseId })
+      .then((history) => {
+        const mapped: AlynaMessageViewModel[] = history.map((m) => ({
+          id:          String(m.id),
+          role:        m.role,
+          text:        m.text,
+          suggestions: m.suggestions,
+        }));
+        setMessages(mapped);
+
+        // Restore last assistant suggestions
+        const lastAssistant = [...mapped].reverse().find((m) => m.role === 'assistant');
+        if (lastAssistant?.suggestions?.length) {
+          setSuggestions(lastAssistant.suggestions);
+        }
       })
       .catch(() => {
-        if (cancelled) return;
-        setResolvedPatientId(undefined);
+        // Silent — fresh conversation starts
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [explicitPatientId]);
+  }, [opts.patientId, opts.caseId]);
 
-  const patientId = resolvedPatientId;
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!patientId) {
-      setMessages(aiAnalysisToAlynaSeed(0, null));
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    setLoading(true);
-    setError(null);
-    api.assessments
-      .aiAnalysis(patientId)
-      .then((env) => {
-        if (cancelled) return;
-        setMessages(aiAnalysisToAlynaSeed(patientId, env.analysis));
-      })
-      .catch((err: Error) => {
-        if (cancelled) return;
-        setMessages(aiAnalysisToAlynaSeed(patientId, null));
-        setError(err.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [patientId]);
-
+  // ── Send message ──────────────────────────────────────────────────────────
   const send = useCallback(
-    (text?: string) => {
+    async (text?: string) => {
       const value = (text ?? draft).trim();
-      if (!value) return;
-      setMessages((prev) => [
-        ...prev,
-        { id: `u-${Date.now()}`, role: 'user', text: value },
-      ]);
+      if (!value || loading) return;
+
+      const userMsg: AlynaMessageViewModel = {
+        id:   `u-${Date.now()}`,
+        role: 'user',
+        text: value,
+      };
+      setMessages((prev) => [...prev, userMsg]);
       setDraft('');
-
-      if (!patientId) return;
-
+      setSuggestions([]);
       setLoading(true);
-      api.assessments
-        .aiAnalysis(patientId, { refresh: true })
-        .then((env) => {
-          const a = env.analysis;
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `a-${Date.now()}`,
-              role: 'assistant',
-              text:
-                a.narrative ??
-                a.recommendation ??
-                'I have no additional information at this time.',
-              confidence: a.risk_score ?? undefined,
-              tags: (a.findings ?? []).slice(0, 3),
-            },
-          ]);
-        })
-        .catch((err: Error) => {
-          setError(err.message);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `a-${Date.now()}`,
-              role: 'assistant',
-              text: 'I could not reach the analysis service right now. Please try again.',
-            },
-          ]);
-        })
-        .finally(() => setLoading(false));
+      setError(null);
+
+      try {
+        const response = await api.alyna.chat(value, {
+          patient_id: opts.patientId,
+          case_id:    opts.caseId,
+        });
+
+        const assistantMsg: AlynaMessageViewModel = {
+          id:          `a-${response.message_id}`,
+          role:        'assistant',
+          text:        response.reply,
+          suggestions: response.suggestions,
+        };
+
+        setMessages((prev) => [...prev, assistantMsg]);
+        setSuggestions(response.suggestions ?? []);
+      } catch (err) {
+        setError('Alyna is unavailable. Please try again.');
+        setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
+      } finally {
+        setLoading(false);
+      }
     },
-    [draft, patientId],
+    [draft, loading, opts.patientId, opts.caseId],
   );
+
+  // ── Clear conversation ────────────────────────────────────────────────────
+  const clear = useCallback(async () => {
+    await api.alyna.clear().catch(() => {});
+    setMessages([]);
+    setSuggestions([]);
+    setError(null);
+  }, []);
 
   return {
     messages,
+    suggestions,
     draft,
     setDraft,
     send,
+    clear,
     loading,
     error,
   };

@@ -56,38 +56,7 @@ export const createCasesScreenStyles = (theme: AppTheme) =>
       color: theme.colors.textOnDark,
     },
 
-    // Dataset filter chips 
-    chipsScroll: {
-      flexDirection: 'row',
-      paddingHorizontal: 2,
-      paddingVertical: 2,
-    },
-    chip: {
-      paddingHorizontal: 14,
-      paddingVertical: 6,
-      borderRadius: theme.radii.pill,
-      borderWidth: 1,
-      borderColor: theme.colors.divider,
-      backgroundColor: theme.colors.surface,
-    },
-    chipGap: {
-      marginRight: theme.spacing.sm,
-    },
-    chipActive: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary,
-    },
-    chipText: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.textSecondary,
-      fontWeight: '600',
-      fontSize: 12,
-    },
-    chipTextActive: {
-      color: theme.colors.textOnDark,
-    },
-
-    // Search bar 
+      // Search bar 
     searchWrap: {
       flexDirection: 'row',
       alignItems: 'center',

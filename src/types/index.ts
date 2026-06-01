@@ -499,21 +499,24 @@ export interface CaseViewModel {
   caseId: string;
   patientId: number;
   recordId?: number;
-  severity: Severity;
+  severity: 'CRITICAL' | 'URGENT' | 'ROUTINE';
   anomaly: string;
-  patientSex: 'M' | 'F' | string;
+  patientSex: string;
   patientAge: number;
   patientCode: string;
   hr: number | null;
-  hrDelta?: number | null;
+  hrDelta: number | null;
   confidence: number;
   signalQ: string;
   viewing: number;
   ageMinutes: number;
   status: 'live' | 'claimed' | 'completed';
   hrv?: number | null;
-  datasetSource?: DatasetSource | null;
-  datasetLabel: string;
+  datasetSource?: string;
+  datasetLabel?: string;
+  doctorName?: string | null;
+  recordName?: string | null;
+  notes?: string | null;
 }
 
 export interface DoctorStatsViewModel {
@@ -642,6 +645,21 @@ export interface AlynaMessageViewModel {
   text: string;
   confidence?: number;
   tags?: string[];
+  suggestions?: string[];
+}
+
+export interface AlynaChatResponse {
+  reply:       string;
+  suggestions: string[];
+  message_id:  number;
+}
+
+export interface AlynaHistoryMessage {
+  id:          number;
+  role:        'user' | 'assistant';
+  text:        string;
+  suggestions: string[];
+  created_at:  string;
 }
 
 export interface PatientContextViewModel {
