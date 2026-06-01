@@ -1,3 +1,14 @@
+/** Formats an ISO datetime string → "2m ago", "1h ago", etc. */
+export const formatRelativeTime = (isoString: string): string => {
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const hrs = Math.floor(diffMin / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
+
 export const formatRelativeMinutes = (minutes: number): string => {
   if (minutes < 1) {
     const sec = Math.max(1, Math.round(minutes * 60));

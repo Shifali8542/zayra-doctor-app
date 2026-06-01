@@ -1,25 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../api/api';
 import { caseHistoryToTimeline } from '../../../api/adapters';
 import { useApi } from '../../../utils/useApi';
+import { waveformCache } from '../../traceview/waveformCache';
 import type {
+  AIAnalysisResult,
   CaseDetailFull,
   CaseViewModel,
   ECGRecordComparison,
   ECGRecordHistoryItem,
   PatientContextViewModel,
   PhysiologySnapshotViewModel,
+  STElevationResult,
   TimelineEventViewModel,
+  WaveformResponse,
 } from '../../../types';
 
-const fallbackCase: CaseViewModel = null as unknown as CaseViewModel;
-
-const fallbackContext: PatientContextViewModel | null = null;
-
-const fallbackPhysiology: PhysiologySnapshotViewModel | null = null;
-
 export const useClaim = (caseId?: number) => {
-  // Single call — replaces 3 separate calls
   const detailQ = useApi(
     () =>
       caseId
@@ -28,33 +25,126 @@ export const useClaim = (caseId?: number) => {
     [caseId],
   );
 
-  // Selected record id — null means current case record (default)
+  // Selected record
   const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
 
-  const detail: CaseDetailFull | null = detailQ.data ?? null;
+  // Action mutation states 
+  const [isActioning, setIsActioning] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  // Records enriched history — loaded once patient is known
+  // Waveform state 
+  const [waveformData, setWaveformData] = useState<WaveformResponse | null>(null);
+  const [waveformLoading, setWaveformLoading] = useState(false);
+
+  const detail: CaseDetailFull | null = detailQ.data ?? null;
   const patientId = detail?.patient?.id;
+
+  // Active ECG record ID
+  const currentRecordId = useMemo(
+    () =>
+      selectedRecordId ??
+      detail?.records?.find((r) => r.is_current)?.id ??
+      detail?.records?.[0]?.id,
+    [selectedRecordId, detail],
+  );
+
+  // Waveform fetch 
+  const recordIdRef = useRef(currentRecordId);
+  recordIdRef.current = currentRecordId;
+
+  useEffect(() => {
+    if (!patientId || !currentRecordId) return;
+
+    const cached = waveformCache.get(currentRecordId);
+    if (cached) {
+      setWaveformData(cached);
+      setWaveformLoading(false);
+      return;
+    }
+
+    setWaveformLoading(true);
+    setWaveformData(null);
+
+    api.patients
+      .waveform(patientId, { record_id: currentRecordId, downsample: 8 })
+      .then((res) => {
+        if (recordIdRef.current === currentRecordId) {
+          waveformCache.set(currentRecordId, res);
+          setWaveformData(res);
+          setWaveformLoading(false);
+        }
+      })
+      .catch(() => {
+        if (recordIdRef.current === currentRecordId) {
+          setWaveformLoading(false);
+        }
+      });
+  }, [patientId, currentRecordId]);
+
+  // Primary samples — case-insensitive lead lookup
+  const primarySamples = useMemo(() => {
+    if (!waveformData?.waveforms) return null;
+    const w = waveformData.waveforms;
+    return (
+      w['II']  ?? w['ii']  ??
+      w['I']   ?? w['i']   ??
+      Object.values(w)[0]  ?? null
+    );
+  }, [waveformData]);
+
+  // Record switcher
+  const handleSetSelectedRecordId = useCallback((id: number | null) => {
+    setSelectedRecordId(id);
+    setWaveformData(null);
+    setWaveformLoading(true);
+  }, []);
+
+  // Supporting API calls
   const recordsQ = useApi(
     () =>
       patientId
         ? api.patients.recordsHistory(patientId)
-        : Promise.reject(new Error('No patient id')),
+        : Promise.reject(new Error('no patientId')),
     [patientId],
   );
 
-  // Per-record waveform/clinical — only fetched when doctor switches record
-  const activeRecordId = selectedRecordId ?? detail?.case?.id ?? undefined;
+  // This ensures clinicalQ fires immediately — not only after an explicit record switch.
   const clinicalQ = useApi(
     () =>
-      patientId && selectedRecordId
-        ? api.patients.clinicalInfo(patientId, { record_id: selectedRecordId })
-        : Promise.reject(new Error('no switch yet')),
-    [patientId, selectedRecordId],
+      patientId && currentRecordId
+        ? api.patients.clinicalInfo(patientId, { record_id: currentRecordId })
+        : Promise.reject(new Error('no patientId or record')),
+    [patientId, currentRecordId],
   );
 
-  // ── View model assembly 
-const caseItem: CaseViewModel | null = useMemo(() => {
+  const comparisonQ = useApi(
+    () =>
+      patientId
+        ? api.patients.recordComparison(patientId)
+        : Promise.reject(new Error('no patientId')),
+    [patientId],
+  );
+
+  // AI analysis
+  const aiAnalysisQ = useApi(
+    () =>
+      patientId && currentRecordId
+        ? api.assessments.aiAnalysis(patientId, { record_id: currentRecordId })
+        : Promise.reject(new Error('no record')),
+    [patientId, currentRecordId],
+  );
+
+  // ST elevation result — re-fetches per record, read-only (no new analysis triggered).
+  const stResultQ = useApi(
+    () =>
+      patientId && currentRecordId
+        ? api.assessments.stResult(patientId, currentRecordId)
+        : Promise.reject(new Error('no record')),
+    [patientId, currentRecordId],
+  );
+
+  // View model: caseItem
+  const caseItem: CaseViewModel | null = useMemo(() => {
     if (!detail) return null;
     const c = detail.case;
     const p = detail.patient;
@@ -62,127 +152,160 @@ const caseItem: CaseViewModel | null = useMemo(() => {
     const digits = p.patient_code.replace(/\D/g, '').padStart(5, '0').slice(-5);
     const severityMap: Record<string, CaseViewModel['severity']> = {
       critical: 'CRITICAL', urgent: 'URGENT',
-      routine: 'URGENT', normal: 'ROUTINE',
+      routine: 'URGENT',   normal: 'ROUTINE',
     };
     return {
-      id: `case-${c.id}`,
-      caseId: `ZC-${digits}`,
-      patientId: p.id,
-      recordId: detail.records.find((r) => r.is_current)?.id,
-      severity: severityMap[c.severity] ?? 'ROUTINE',
-      anomaly: p.display_diagnosis || p.diagnosis || 'Anomaly detected',
+      id:         `case-${c.id}`,
+      caseId:     `ZC-${digits}`,
+      patientId:  p.id,
+      recordId:   detail.records.find((r) => r.is_current)?.id,
+      severity:   severityMap[c.severity] ?? 'ROUTINE',
+      anomaly:    p.display_diagnosis || p.diagnosis || 'Anomaly detected',
       patientSex: p.sex ? (p.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—',
       patientAge: p.age ?? 0,
       patientCode: p.patient_code,
-      hr: v.heart_rate_bpm ? Math.round(v.heart_rate_bpm) : null,
-      hrv: v.hrv_ms ? Math.round(v.hrv_ms) : null,
-      spo2: null,
+      hr:         v.heart_rate_bpm ? Math.round(v.heart_rate_bpm) : null,
+      hrv:        v.hrv_ms ? Math.round(v.hrv_ms) : null,
       confidence: detail.orinn?.risk_score ?? c.confidence_score ?? 0,
-      signalQ: v.quality_score ? `Q${Math.round(v.quality_score)}` : 'Q—',
-      viewing: 1,
+      signalQ:    v.quality_score ? `Q${Math.round(v.quality_score)}` : 'Q—',
+      viewing:    1,
       ageMinutes: c.created_at
         ? Math.round((Date.now() - new Date(c.created_at).getTime()) / 60000)
         : 0,
-      status: c.status as CaseViewModel['status'],
+      status:      c.status as CaseViewModel['status'],
       datasetSource: p.dataset_source,
-      datasetLabel: p.dataset_source_display || '—',
+      datasetLabel:  p.dataset_source_display || '—',
     };
   }, [detail]);
 
+  // View model: patientContext
   const patientContext: PatientContextViewModel | null = useMemo(() => {
     if (!detail) return null;
     const p = detail.patient;
     const extra = p.extra_info ?? {};
     return {
-      sex: p.sex ?? '—',
-      age: p.age ?? 0,
+      sex:           p.sex ?? '—',
+      age:           p.age ?? 0,
       comorbidities: (extra.comorbidities as string) || '—',
-      adherencePct: (extra.adherence_pct as number) || 0,
-      activity: (extra.activity as string) || '—',
-      sleep: (extra.sleep as string) || '—',
-      dietPattern: (extra.diet_pattern as string) || '—',
+      adherencePct:  (extra.adherence_pct as number) || 0,
+      activity:      (extra.activity as string) || '—',
+      sleep:         (extra.sleep as string) || '—',
+      dietPattern:   (extra.diet_pattern as string) || '—',
       smokingAlcohol: (extra.smoking_alcohol as string) || '—',
     };
   }, [detail]);
 
+  // View model: physiology
   const physiology: PhysiologySnapshotViewModel | null = useMemo(() => {
-    const v = clinicalQ.data?.ecg_analysis ?? detail?.vitals;
+    const v = clinicalQ.data?.ecg_analysis ?? (clinicalQ.loading ? detail?.vitals : null);
     if (!v) return null;
-    const hr = (v as any).heart_rate_bpm;
+    const hr = (v as any).heart_rate_bpm ?? 0;
     return {
-      pulse: { value: Math.round(hr ?? 0), baseline: 0 },
-      hrv: { value: Math.round((v as any).hrv_ms ?? 0), baseline: 0, unit: 'ms' },
-      spo2: { value: 0, baseline: 0 },
-      recovery: hr > 110 ? 'Low' : hr > 90 ? 'Moderate' : 'High',
+      pulse:        { value: Math.round(hr), baseline: 0 },
+      hrv:          { value: Math.round((v as any).hrv_ms ?? 0), baseline: 0, unit: 'ms' },
+      recovery:     hr > 110 ? 'Low' : hr > 90 ? 'Moderate' : 'High',
       recoveryNote: (v as any).rhythm ?? '—',
     };
   }, [clinicalQ.data, detail]);
 
-  // Real history timeline from backend — one row per case review event
+  // Timeline
   const timeline: TimelineEventViewModel[] = useMemo(
     () => caseHistoryToTimeline(detail?.history ?? []),
     [detail],
   );
 
-  // ECG record comparison — full metrics + deltas per record
-  // ECG record comparison — full metrics + deltas per record
-  const comparisonQ = useApi(
-    () => {
-      if (!patientId) {
-        console.log('[useClaim] comparisonQ: skipped — no patientId yet');
-        return Promise.reject(new Error('No patient id'));
-      }
-      console.log('[useClaim] comparisonQ: fetching for patientId=', patientId);
-      return api.patients.recordComparison(patientId);
-    },
-    [patientId],
-  );
+  // Action mutations
+  const claimCase = useCallback(async () => {
+    if (!caseId) return;
+    setIsActioning(true);
+    setActionError(null);
+    try {
+      await api.cases.claim(caseId);
+      await detailQ.refetch();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Failed to claim');
+    } finally {
+      setIsActioning(false);
+    }
+  }, [caseId, detailQ]);
 
-  // Log every state change so we can trace the problem
-  console.log('[useClaim] --- state snapshot ---');
-  console.log('[useClaim] caseId:', caseId);
-  console.log('[useClaim] detailQ.loading:', detailQ.loading, '| detailQ.error:', detailQ.error);
-  console.log('[useClaim] detail:', detail ? 'present' : 'null');
-  console.log('[useClaim] patientId from detail:', patientId);
-  console.log('[useClaim] comparisonQ.loading:', comparisonQ.loading, '| comparisonQ.error:', comparisonQ.error ?? 'none');
-  if (comparisonQ.error) {
-    console.warn('[useClaim] ⚠️  comparison fetch failed — likely backend S3 timeout. Error:', comparisonQ.error);
-  }
-  console.log('[useClaim] comparisonQ.data (raw):', JSON.stringify(comparisonQ.data, null, 2));
+  const completeCase = useCallback(async (notes: string) => {
+    if (!caseId) return;
+    setIsActioning(true);
+    setActionError(null);
+    try {
+      await api.cases.complete(caseId, notes);
+      await detailQ.refetch();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Failed to complete');
+    } finally {
+      setIsActioning(false);
+    }
+  }, [caseId, detailQ]);
 
-  // ECG records with enriched ST/AI/HR per record (legacy — kept for backward compat)
-  const ecgRecords: ECGRecordHistoryItem[] = recordsQ.data?.records ?? [];
+  const escalateCase = useCallback(async (notes: string) => {
+    if (!caseId) return;
+    setIsActioning(true);
+    setActionError(null);
+    try {
+      await api.cases.escalate(caseId, notes);
+      await detailQ.refetch();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Failed to escalate');
+    } finally {
+      setIsActioning(false);
+    }
+  }, [caseId, detailQ]);
 
-  // Full comparison records with deltas
-  const comparisonRecords: ECGRecordComparison[] =
-    comparisonQ.data?.records ?? [];
-
-  console.log('[useClaim] comparisonRecords.length:', comparisonRecords.length);
-  console.log('[useClaim] ecgRecords.length:', ecgRecords.length);
-
+  // Return
   return {
     caseItem,
     timeline,
-    ecgRecords,
-    comparisonRecords,
+    ecgRecords:        (recordsQ.data?.records ?? []) as ECGRecordHistoryItem[],
+    comparisonRecords: (comparisonQ.data?.records ?? []) as ECGRecordComparison[],
     patientContext,
     physiology,
+
+    // Record selection
     selectedRecordId,
-    setSelectedRecordId,
-    clinicalLoading: clinicalQ.loading,
+    setSelectedRecordId: handleSetSelectedRecordId,
+    currentRecordId,
+
+    // Waveform
+    primarySamples,
+    waveformLoading,
+    effectiveSamplingRate: waveformData?.effective_sampling_rate ?? 125,
+    waveformGrid:          waveformData?.grid ?? null,
+
+    // Loading / error
+    clinicalLoading:   clinicalQ.loading,
     comparisonLoading: comparisonQ.loading,
-    comparisonError: comparisonQ.error,
-    aiAnalysis: detail?.orinn ?? null,
-    stAnalysis: detail?.st_analysis ?? null,
-    allDiagnoses: detail?.patient?.all_diagnoses ?? [],
-    records: detail?.records ?? [],
+    comparisonError:   comparisonQ.error,
+
+    // Case data
+    aiAnalysis:     detail?.orinn ?? null,
+    stAnalysis:     detail?.st_analysis ?? null,
+    allDiagnoses:   detail?.patient?.all_diagnoses ?? [],
+    records:        detail?.records ?? [],
+    caseStatus:     detail?.case?.status ?? null,
+    caseCreatedAt:  detail?.case?.created_at ?? null,
+
+    // Mutations
+    claimCase,
+    completeCase,
+    escalateCase,
+    isActioning,
+    actionError,
+
     loading: detailQ.loading,
-    error: detailQ.error,
+    error:   detailQ.error,
     refetch: async () => {
       await Promise.all([
         detailQ.refetch(),
         recordsQ.refetch(),
         comparisonQ.refetch(),
+        aiAnalysisQ.refetch(),
+        stResultQ.refetch(),
       ]);
     },
   };

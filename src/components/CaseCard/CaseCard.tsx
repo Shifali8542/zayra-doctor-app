@@ -83,22 +83,29 @@ export const CaseCard: React.FC<CaseCardProps> = React.memo(({
 
         <View style={styles.footerRow}>
           <View style={styles.footerLeft}>
-            <View style={styles.iconRow}>
-              <Icon name="eye" size={15} color={theme.colors.textTertiary} strokeWidth={1.8} />
-              <Text style={styles.footerText}>{caseItem.viewing} viewing</Text>
+            <View style={styles.datasetPill}>
+              <Text style={styles.datasetPillText} numberOfLines={1}>
+                {caseItem.datasetLabel}
+              </Text>
             </View>
-            <View style={[styles.iconRow, { marginLeft: 16 }]}>
-              <Icon name="trace" size={15} color={theme.colors.textTertiary} strokeWidth={1.8} />
-              <Text style={styles.footerText}>{caseItem.signalQ}</Text>
-            </View>
+            {caseItem.signalQ !== 'Q—' && (
+              <View style={[styles.iconRow, { marginLeft: 10 }]}>
+                <Icon name="trace" size={13} color={theme.colors.textTertiary} strokeWidth={1.8} />
+                <Text style={styles.footerText}>{caseItem.signalQ}</Text>
+              </View>
+            )}
           </View>
-          {showClaim ? (
+          {showClaim && caseItem.status === 'live' ? (
             <Button
               label="Claim"
               size="sm"
               onPress={onClaim}
               iconRight="chevron-right"
             />
+          ) : caseItem.status === 'claimed' && caseItem.patientCode ? (
+            <Text style={[styles.footerText, { color: theme.colors.primary, fontWeight: '700' }]}>
+              Claimed
+            </Text>
           ) : null}
         </View>
       </Card>

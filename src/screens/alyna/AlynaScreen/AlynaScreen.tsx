@@ -25,7 +25,7 @@ export const AlynaScreen: React.FC<AlynaScreenProps> = ({ navigation, route }) =
   const theme = useAppTheme();
   const styles = createAlynaScreenStyles(theme);
   const patientId: number | undefined = route?.params?.patientId;
-  const { messages, suggestions, draft, setDraft, send } = useAlyna(patientId);
+  const { messages, draft, setDraft, send } = useAlyna(patientId);
 
   return (
     <Layout scroll padded edges={['top']} bottomInsetExtra={92}>
@@ -79,21 +79,6 @@ export const AlynaScreen: React.FC<AlynaScreenProps> = ({ navigation, route }) =
               </View>
             );
           })}
-
-          <View style={styles.suggestionsWrap}>
-            {suggestions.map((s) => (
-              <Pressable
-                key={s}
-                onPress={() => send(s)}
-                style={({ pressed }) => [
-                  styles.suggestionChip,
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                <Text style={styles.suggestionText}>{s}</Text>
-              </Pressable>
-            ))}
-          </View>
 
           <View style={styles.inputRow}>
             <TextInput

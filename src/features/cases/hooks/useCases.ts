@@ -39,9 +39,11 @@ const fetchPage = async (
   status: CasesTab,
   page: number,
   search: string,
+  datasetSource = '',
 ): Promise<{ results: CaseReview[]; count: number }> => {
   const query: CaseListQuery = { status, page, page_size: PAGE_SIZE };
-  if (search.trim()) query.search = search.trim();
+  if (search.trim())       query.search         = search.trim();
+  if (datasetSource.trim()) query.dataset_source = datasetSource.trim();
   const res = await api.cases.list(query);
   return { results: res.results ?? [], count: res.count ?? 0 };
 };
@@ -49,6 +51,7 @@ const fetchPage = async (
 export const useCases = () => {
   const [activeTab, setActiveTabRaw] = useState<CasesTab>('live');
   const [search, setSearch] = useState('');
+  const [datasetFilter, setDatasetFilter] = useState('');
 
   // Single state object for all tabs — avoids 5 separate useState calls
   const [tabState, setTabState] = useState<AllTabState>(() =>
@@ -74,15 +77,15 @@ export const useCases = () => {
   }, []);
 
   /** Load page 1 of a tab. Skips if already loaded (unless forced). */
-  const loadTab = useCallback(async (tab: CasesTab, q: string, force = false) => {
+  const loadTab = useCallback(async (tab: CasesTab, q: string, force = false, datasetSource = '') => {
     if (fetchingRef.current.has(tab)) return;
-    if (!force && loadedTabs.current.has(tab) && q === '') return;
+    if (!force && loadedTabs.current.has(tab) && q === '' && datasetSource === '') return;
 
     fetchingRef.current.add(tab);
     updateTab(tab, { loading: true, error: null, items: [], page: 1, hasMore: true });
 
     try {
-      const { results, count } = await fetchPage(tab, 1, q);
+      const { results, count } = await fetchPage(tab, 1, q, datasetSource);
       const items = results.map(caseReviewToViewModel);
       loadedTabs.current.add(tab);
       updateTab(tab, {
@@ -109,7 +112,7 @@ export const useCases = () => {
     updateTab(activeTab, { loadingMore: true });
 
     try {
-      const { results, count } = await fetchPage(activeTab, nextPage, search);
+     const { results, count } = await fetchPage(activeTab, nextPage, search, datasetFilter);
       const newItems = results.map(caseReviewToViewModel);
       const existingIds = new Set(s.items.map((i) => i.id));
       const uniqueNew = newItems.filter((i) => !existingIds.has(i.id));
@@ -143,22 +146,31 @@ export const useCases = () => {
     api.cases.counts().then(setCounts).catch(() => {});
   }
 
-  /** Called when search text changes — debounced to avoid per-keystroke API calls */
+  /** Called when search text changes — debounced, preserves active dataset filter */
   const onSearch = useCallback((q: string) => {
     setSearch(q);
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => {
       loadedTabs.current.delete(activeTab);
-      loadTab(activeTab, q, true);
+      loadTab(activeTab, q, true, datasetFilter);
     }, DEBOUNCE_MS);
+  }, [activeTab, datasetFilter, loadTab]);
+
+  /** Called when a dataset chip is tapped — clears search, applies dataset filter */
+  const onDatasetFilter = useCallback((source: string) => {
+    setDatasetFilter(source);
+    setSearch('');
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    loadedTabs.current.delete(activeTab);
+    loadTab(activeTab, '', true, source);
   }, [activeTab, loadTab]);
 
   /** Pull-to-refresh — reloads active tab from page 1 + refreshes counts */
   const refetch = useCallback(async () => {
     loadedTabs.current.delete(activeTab);
-    await loadTab(activeTab, search, true);
+    await loadTab(activeTab, search, true, datasetFilter);
     api.cases.counts().then(setCounts).catch(() => {});
-  }, [activeTab, search, loadTab]);
+  }, [activeTab, search, datasetFilter, loadTab]);
 
   const active = tabState[activeTab];
 
@@ -173,6 +185,8 @@ export const useCases = () => {
     error: active.error,
     search,
     onSearch,
+    datasetFilter,
+    onDatasetFilter,
     loadMore,
     refetch,
     findById: (id: string): CaseViewModel | undefined =>

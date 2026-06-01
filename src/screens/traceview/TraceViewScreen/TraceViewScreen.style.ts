@@ -137,4 +137,81 @@ export const createTraceViewScreenStyles = (theme: AppTheme) =>
       minHeight: 90,
       textAlignVertical: 'top',
     },
+    // ── Page header row ──────────────────────────────────────────────────────
+    pageHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    backBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 6,
+      paddingRight: 8,
+    },
+    backBtnText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textSecondary,
+      marginLeft: 2,
+    },
+    caseInfoMeta: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textSecondary,
+      marginBottom: theme.spacing.lg,
+      lineHeight: 18,
+    },
+    // ── View mode toggle ─────────────────────────────────────────────────────
+    viewToggleWrap: {
+      flexDirection: 'row',
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.surface,
+      overflow: 'hidden',
+    },
+    viewToggleBtn: {
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      backgroundColor: 'transparent',
+    },
+    viewToggleBtnActive: {
+      backgroundColor: theme.colors.primary,
+    },
+    viewToggleBtnText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textSecondary,
+      fontWeight: '600',
+      fontSize: 12,
+    },
+    viewToggleBtnTextActive: {
+      color: theme.colors.textOnDark,
+    },
+    // ── Waveform analysis grid ────────────────────────────────────────────────
+    analysisCell: {
+      flex: 1,
+      minWidth: '44%',
+      backgroundColor: theme.colors.backgroundAlt,
+      borderRadius: theme.radii.lg,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+    },
+    analysisCellLabel: {
+      ...theme.typography.eyebrow,
+      color: theme.colors.textTertiary,
+      fontSize: 9,
+      letterSpacing: 0.8,
+      marginBottom: 3,
+    },
+    analysisCellValue: {
+      ...theme.typography.h3,
+      color: theme.colors.textPrimary,
+      fontWeight: '700',
+      fontSize: 16,
+    },
+    analysisCellUnit: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textSecondary,
+      fontWeight: '400',
+      fontSize: 11,
+    },
   });

@@ -1,5 +1,5 @@
-import React from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { Layout } from '../../../components/Layout/Layout';
 import { Header } from '../../../components/Header/Header';
 import { Card } from '../../../components/Card/Card';
@@ -8,10 +8,12 @@ import { Tag } from '../../../components/Tag/Tag';
 import { SeverityBadge } from '../../../components/SeverityBadge/SeverityBadge';
 import { MetricCard } from '../../../components/MetricCard/MetricCard';
 import { Icon } from '../../../components/Icon';
+import { EcgWaveform } from '../../../components/EcgWaveform/EcgWaveform';
+import { WaveformPlaceholder } from '../../../components/WaveformPlaceholder/WaveformPlaceholder';
 import { useClaim } from '../../../features/claim/hooks/useClaim';
 import { useAppTheme } from '../../../context/ThemeContext';
 import { createClaimDetailScreenStyles } from './ClaimDetailScreen.style';
-import { formatRelativeMinutes } from '../../../utils/format';
+import { formatRelativeMinutes, formatRelativeTime } from '../../../utils/format';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useResponsive } from '../../../utils/useResponsive';
 
@@ -54,14 +56,18 @@ const TimelineItem: React.FC<{ when: string; description: string; isFirst?: bool
 };
 
 const ActionPathButton: React.FC<{
-  icon: any; label: string; onPress?: () => void;
-}> = ({ icon, label, onPress }) => {
+  icon: any; label: string; onPress?: () => void; disabled?: boolean;
+}> = ({ icon, label, onPress, disabled }) => {
   const theme = useAppTheme();
   const styles = createClaimDetailScreenStyles(theme);
   return (
     <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.actionRow, pressed && { opacity: 0.85 }]}
+      onPress={disabled ? undefined : onPress}
+      style={({ pressed }) => [
+        styles.actionRow,
+        pressed && !disabled && { opacity: 0.85 },
+        disabled && { opacity: 0.5 },
+      ]}
     >
       <View style={styles.actionIconCircle}>
         <Icon name={icon} size={18} color={theme.colors.textOnDark} strokeWidth={1.8} />
@@ -393,14 +399,22 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
   const theme = useAppTheme();
   const styles = createClaimDetailScreenStyles(theme);
   const caseId: number | undefined = route?.params?.caseId ?? route?.params?.patientId;
+  const [notes, setNotes] = useState('');
+
   const {
     caseItem, timeline, ecgRecords, comparisonRecords, patientContext,
     physiology, selectedRecordId, setSelectedRecordId,
     clinicalLoading, comparisonLoading, comparisonError,
-    aiAnalysis, records, loading, error,
+    aiAnalysis, stAnalysis, records, loading, error,
+    primarySamples, waveformLoading, effectiveSamplingRate, waveformGrid,
+    claimCase, completeCase, escalateCase, isActioning, actionError,
+    caseStatus, caseCreatedAt,
   } = useClaim(caseId);
 
   const patientId = caseItem?.patientId;
+  const isClaimed = caseStatus === 'claimed';
+  const isLive    = caseStatus === 'live';
+  const isDone    = caseStatus === 'completed' || caseStatus === 'escalated' || caseStatus === 'missed';
 
   const { width: screenWidth } = useResponsive();
   const ecgWidth = screenWidth - 80;
@@ -437,7 +451,7 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
                 {caseItem.datasetLabel}
               </Text>
               <Text style={styles.elapsed}>
-                · {formatRelativeMinutes(caseItem.ageMinutes + 3)}
+                · {caseCreatedAt ? formatRelativeTime(caseCreatedAt) : '—'}
               </Text>
             </View>
             <Text style={styles.caseTitle}>{caseItem.anomaly}</Text>
@@ -488,13 +502,15 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
             <View style={styles.sectionHeaderRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.sectionTitle}>Anomaly waveform</Text>
-                <Text style={styles.sectionMeta}>Live capture · last 30 seconds</Text>
+                <Text style={styles.sectionMeta}>
+                  Lead II · {records.find((r) => r.id === selectedRecordId)?.sampling_rate ?? '—'} Hz
+                </Text>
               </View>
               <Pressable
                 onPress={() =>
                   navigation.navigate('Tabs', {
                     screen: 'TraceView',
-                    params: { patientId, recordId: caseItem?.recordId },
+                    params: { patientId, caseId },
                   })
                 }
                 style={({ pressed }) => pressed && { opacity: 0.7 }}
@@ -503,33 +519,137 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
               </Pressable>
             </View>
 
-            <View style={{ marginTop: theme.spacing.lg, paddingVertical: theme.spacing.lg, alignItems: 'center', borderRadius: theme.radii.lg, backgroundColor: '#0E1B2C' }}>
-              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                Tap "Inspect in TraceView →" to view the full real ECG signal
-              </Text>
+            {/* Record switcher pills */}
+            {records.length > 1 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginTop: theme.spacing.md }}
+                contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingBottom: 4 }}
+              >
+                {records.map((rec) => {
+                  const isActive = selectedRecordId === rec.id || (selectedRecordId === null && rec.is_current);
+                  return (
+                    <Pressable
+                      key={rec.id}
+                      onPress={() => setSelectedRecordId(rec.id)}
+                      style={({ pressed }) => ({
+                        paddingHorizontal: 12, paddingVertical: 6,
+                        borderRadius: theme.radii.pill, borderWidth: 1,
+                        backgroundColor: isActive ? theme.colors.primary : theme.colors.surface,
+                        borderColor: isActive ? theme.colors.primary : theme.colors.divider,
+                        opacity: pressed ? 0.75 : 1,
+                      })}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: isActive ? '#fff' : theme.colors.textSecondary }}>
+                        {rec.record_name}{rec.is_current ? ' (current)' : ''}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            <View style={{ marginTop: theme.spacing.md, borderRadius: theme.radii.lg, overflow: 'hidden' }}>
+              {waveformLoading ? (
+                <WaveformPlaceholder height={160} />
+              ) : primarySamples && primarySamples.length > 0 ? (
+                <EcgWaveform
+                  width={ecgWidth}
+                  height={160}
+                  data={primarySamples}
+                  effectiveSamplingRate={effectiveSamplingRate}
+                  displaySeconds={10}
+                />
+              ) : (
+                <View style={{ height: 120, backgroundColor: '#0E1B2C', borderRadius: theme.radii.lg, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>
+                    Waveform not available · Open TraceView for full signal
+                  </Text>
+                </View>
+              )}
             </View>
             <View style={styles.captureMetaRow}>
               <Text style={styles.captureMeta}>Lead II · 25mm/s · 10mm/mV</Text>
+              <Text style={styles.captureMeta}>
+                {effectiveSamplingRate ? `${effectiveSamplingRate} Hz` : ''}
+              </Text>
             </View>
           </Card>
 
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Alyna summary</Text>
-            <Text style={styles.sectionMeta}>Governed AI assessment</Text>
-            <Text style={styles.summaryBody}>
-              {caseItem.anomaly}. Pattern is{' '}
-              <Text style={styles.bold}>significantly outside personal baseline</Text>{' '}
-              for this patient. Concurrent SpO₂ and HRV trends corroborate physiologic stress.
-              Recommend immediate clinician review and consideration of escalation.
-            </Text>
-            <View style={styles.tagsCol}>
-              <Tag
-                label={`Confidence ${caseItem.confidence}%`}
-                leftIcon={<Icon name="alert-triangle" size={13} color={theme.colors.textPrimary} />}
-                style={styles.summaryTag}
-              />
-              <Tag label="No prior event in 30d" style={styles.summaryTag} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionTitle}>Orinn AI summary</Text>
+                <Text style={styles.sectionMeta}>Governed AI assessment</Text>
+              </View>
+              {!aiAnalysis && (
+                <Button
+                  label={isActioning ? 'Analyzing…' : 'Run analysis'}
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => navigation.navigate('Tabs', { screen: 'Alyna', params: { patientId } })}
+                />
+              )}
             </View>
+
+            {aiAnalysis ? (
+              <>
+                {/* Risk badge */}
+                <View style={{
+                  alignSelf: 'flex-start',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: theme.spacing.md,
+                }}>
+                  <View style={[styles.riskBadge, {
+                    backgroundColor:
+                      aiAnalysis.risk_level === 'Critical' ? 'rgba(208,78,92,0.12)' :
+                      aiAnalysis.risk_level === 'High' ? 'rgba(245,158,11,0.12)' :
+                      aiAnalysis.risk_level === 'Moderate' ? 'rgba(59,130,246,0.12)' :
+                      'rgba(31,165,155,0.12)',
+                  }]}>
+                    <Text style={[styles.riskBadgeText, {
+                      color:
+                        aiAnalysis.risk_level === 'Critical' ? theme.colors.danger :
+                        aiAnalysis.risk_level === 'High' ? '#F59E0B' :
+                        aiAnalysis.risk_level === 'Moderate' ? '#3B82F6' :
+                        theme.colors.success,
+                    }]}>
+                      {aiAnalysis.risk_level} Risk · {aiAnalysis.risk_score ?? '—'}/100
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Narrative */}
+                {aiAnalysis.narrative ? (
+                  <Text style={styles.summaryBody}>{aiAnalysis.narrative}</Text>
+                ) : null}
+
+                {/* Findings chips */}
+                {aiAnalysis.findings.length > 0 && (
+                  <View style={styles.tagsCol}>
+                    {aiAnalysis.findings.map((f, i) => (
+                      <Tag key={i} label={f} style={styles.summaryTag} />
+                    ))}
+                  </View>
+                )}
+
+                {/* Recommendation */}
+                {aiAnalysis.recommendation ? (
+                  <View style={styles.recommendationBox}>
+                    <Text style={styles.recommendationText}>
+                      <Text style={styles.bold}>Recommendation: </Text>
+                      {aiAnalysis.recommendation}
+                    </Text>
+                  </View>
+                ) : null}
+              </>
+            ) : (
+              <Text style={[styles.sectionMeta, { marginTop: theme.spacing.md }]}>
+                Click "Run analysis" to get Orinn AI cardiac assessment for this patient.
+              </Text>
+            )}
           </Card>
 
           {/* ── ECG History comparison table — redesigned ── */}
@@ -549,11 +669,6 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
             </View>
 
             {(() => {
-              console.log('[ClaimDetailScreen] ECG section render');
-              console.log('[ClaimDetailScreen] comparisonRecords:', comparisonRecords.length);
-              console.log('[ClaimDetailScreen] comparisonRecords data:', JSON.stringify(comparisonRecords, null, 2));
-              console.log('[ClaimDetailScreen] records (from detail):', records.length);
-              console.log('[ClaimDetailScreen] clinicalLoading:', clinicalLoading);
               return null;
             })()}
             {comparisonRecords.length > 0 ? (
@@ -637,25 +752,107 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({
             </Card>
           )}
 
-          <LinearGradient
-            colors={[theme.colors.heroGradientFrom, theme.colors.heroGradientMid, theme.colors.heroGradientTo]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.actionPathCard}
-          >
-            <Text style={styles.actionEyebrow}>ACTIONPATH</Text>
-            <Text style={styles.actionTitle}>Make a decision</Text>
+          {/* Show ActionPath only for live/claimed cases */}
+          {(isLive || isClaimed) && (
+            <LinearGradient
+              colors={[theme.colors.heroGradientFrom, theme.colors.heroGradientMid, theme.colors.heroGradientTo]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.actionPathCard}
+            >
+              <Text style={styles.actionEyebrow}>ACTIONPATH</Text>
+              <Text style={styles.actionTitle}>Make a decision</Text>
+              <Text style={[styles.actionEyebrow, { color: 'rgba(255,255,255,0.55)', marginBottom: theme.spacing.md, letterSpacing: 0 }]}>
+                Add notes before submitting your decision.
+              </Text>
 
-            <ActionPathButton icon="phone" label="Escalate to emergency response" />
-            <View style={styles.actionGap} />
-            <ActionPathButton icon="stethoscope" label="Connect to cardiologist on-call" />
-            <View style={styles.actionGap} />
-            <ActionPathButton icon="eye" label="Continue high observation" />
-            <View style={styles.actionGap} />
-            <ActionPathButton icon="check-circle" label="Continue monitoring" />
-            <View style={styles.actionGap} />
-            <ActionPathButton icon="close-circle" label="Mark as false positive" />
-          </LinearGradient>
+              {/* Notes textarea */}
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Clinical notes, observations, outcome…"
+                placeholderTextColor="rgba(255,255,255,0.4)"
+                multiline
+                numberOfLines={3}
+                style={styles.notesInput}
+              />
+
+              {isLive && (
+                <>
+                  <ActionPathButton
+                    icon="check-circle"
+                    label="Claim this case"
+                    onPress={() => claimCase()}
+                    disabled={isActioning}
+                  />
+                  <View style={styles.actionGap} />
+                </>
+              )}
+
+              {isClaimed && (
+                <>
+                  <ActionPathButton
+                    icon="phone"
+                    label="Escalate to emergency response"
+                    onPress={() => escalateCase(notes || 'Escalated to emergency response.')}
+                    disabled={isActioning}
+                  />
+                  <View style={styles.actionGap} />
+                  <ActionPathButton
+                    icon="stethoscope"
+                    label="Connect to cardiologist on-call"
+                    onPress={() => escalateCase(notes || 'Referred to cardiologist on-call.')}
+                    disabled={isActioning}
+                  />
+                  <View style={styles.actionGap} />
+                  <ActionPathButton
+                    icon="eye"
+                    label="Continue high observation"
+                    onPress={() => completeCase(notes || 'Continue high observation.')}
+                    disabled={isActioning}
+                  />
+                  <View style={styles.actionGap} />
+                  <ActionPathButton
+                    icon="check-circle"
+                    label="Continue monitoring"
+                    onPress={() => completeCase(notes || 'Continue monitoring.')}
+                    disabled={isActioning}
+                  />
+                  <View style={styles.actionGap} />
+                  <ActionPathButton
+                    icon="close-circle"
+                    label="Mark as false positive"
+                    onPress={() => completeCase(notes || 'Marked as false positive.')}
+                    disabled={isActioning}
+                  />
+                </>
+              )}
+
+              {isActioning && (
+                <View style={{ alignItems: 'center', marginTop: theme.spacing.md }}>
+                  <ActivityIndicator color="rgba(255,255,255,0.8)" />
+                </View>
+              )}
+              {actionError ? (
+                <Text style={{ color: theme.colors.danger, marginTop: theme.spacing.sm, fontSize: 12, textAlign: 'center' }}>
+                  {actionError}
+                </Text>
+              ) : null}
+            </LinearGradient>
+          )}
+
+          {/* Show outcome for done cases */}
+          {isDone && (
+            <Card style={[styles.section, { borderWidth: 1, borderColor: theme.colors.divider }]}>
+              <Text style={[styles.sectionTitle, { ...theme.typography.eyebrow, fontSize: 11, letterSpacing: 1.4, color: theme.colors.textTertiary }]}>
+                OUTCOME
+              </Text>
+              <Text style={[styles.summaryBody, { marginTop: theme.spacing.sm }]}>
+                {caseStatus === 'escalated' ? '⚡ Escalated — ' : '✓ '}
+                Case {caseStatus}
+              </Text>
+            </Card>
+          )}
         </>
       )}
     </Layout>

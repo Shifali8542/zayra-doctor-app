@@ -3,8 +3,6 @@ import { api } from '../../../api/api';
 import { aiAnalysisToAlynaSeed } from '../../../api/adapters';
 import type { AlynaMessageViewModel } from '../../../types';
 
-const DEFAULT_SUGGESTIONS: string[] = [];
-
 export const useAlyna = (explicitPatientId?: number) => {
   const [messages, setMessages] = useState<AlynaMessageViewModel[]>([]);
   const [draft, setDraft] = useState('');
@@ -14,8 +12,6 @@ export const useAlyna = (explicitPatientId?: number) => {
     explicitPatientId,
   );
 
-  // If no patientId was passed (user tapped the Alyna tab directly), pick the
-  // first live case so the assistant has something to talk about.
   useEffect(() => {
     if (explicitPatientId) {
       setResolvedPatientId(explicitPatientId);
@@ -119,7 +115,6 @@ export const useAlyna = (explicitPatientId?: number) => {
 
   return {
     messages,
-    suggestions: DEFAULT_SUGGESTIONS,
     draft,
     setDraft,
     send,

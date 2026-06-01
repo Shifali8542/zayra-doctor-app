@@ -92,7 +92,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.statsCol}>
           <StatBadge icon="bolt" label="Avg response" value={formatSeconds(stats?.avgResponseSec || 0)} />
           <View style={styles.statGap} />
-          <StatBadge icon="trending-up" label="Today" value={formatCurrency(stats?.todayEarningsUsd || 0)} />
+          <StatBadge icon="trending-up" label="Reviewed" value={`${stats?.todayEarningsUsd ?? 0}`} />
           <View style={styles.statGap} />
           <StatBadge icon="activity" label="Confidence" value={formatPct(stats?.confidencePct || 0)} />
           <View style={styles.statGap} />

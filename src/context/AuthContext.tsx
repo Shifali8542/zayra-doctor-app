@@ -2,17 +2,20 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   ReactNode,
 } from 'react';
-import { api } from '../api/api';
-import type { UserProfile } from '../types';
+import * as SecureStore from 'expo-secure-store';
+import { api, SECURE_TOKEN_KEY } from '../api/api';
+import type { AuthTokens, UserProfile } from '../types';
 
 interface AuthContextValue {
   isAuthenticated: boolean;
   user: UserProfile | null;
   loading: boolean;
+  initializing: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -27,12 +30,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
+  // True while reading tokens from secure store on first launch
+  const [initializing, setInitializing] = useState(true);
+
+  // ── Restore session on app launch ──────────────────────────────────────────
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const raw = await SecureStore.getItemAsync(SECURE_TOKEN_KEY);
+        if (!raw) return;
+
+        const tokens: AuthTokens = JSON.parse(raw);
+        if (!tokens?.access || !tokens?.refresh) return;
+
+        // Load tokens into the in-memory store so all API calls are authorized
+        api.setAuthTokens(tokens);
+
+        // Verify the token is still valid by fetching the profile
+        const profile = await api.auth.profile();
+        setUser(profile);
+        setIsAuthenticated(true);
+      } catch {
+        // Token expired or invalid — clear stale data
+        await SecureStore.deleteItemAsync(SECURE_TOKEN_KEY).catch(() => {});
+        api.setAuthTokens(null);
+      } finally {
+        setInitializing(false);
+      }
+    };
+
+    restoreSession();
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true);
     try {
       const res = await api.auth.login({ email, password });
-      api.setAuthTokens({ access: res.access, refresh: res.refresh });
+      const tokens: AuthTokens = { access: res.access, refresh: res.refresh };
+      api.setAuthTokens(tokens);
+      await SecureStore.setItemAsync(SECURE_TOKEN_KEY, JSON.stringify(tokens));
       setUser(res.user);
       setIsAuthenticated(true);
     } finally {
@@ -53,7 +89,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
           password,
           confirm_password: password,
         });
-        api.setAuthTokens({ access: res.access, refresh: res.refresh });
+        const tokens: AuthTokens = { access: res.access, refresh: res.refresh };
+        api.setAuthTokens(tokens);
+        await SecureStore.setItemAsync(SECURE_TOKEN_KEY, JSON.stringify(tokens));
         setUser(res.user);
         setIsAuthenticated(true);
       } finally {
@@ -69,10 +107,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       try {
         await api.auth.logout(refresh);
       } catch {
-        // best-effort
       }
     }
     api.setAuthTokens(null);
+    await SecureStore.deleteItemAsync(SECURE_TOKEN_KEY).catch(() => {});
     setUser(null);
     setIsAuthenticated(false);
   }, []);
@@ -82,8 +120,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ isAuthenticated, user, loading, login, signup, logout, skip }),
-    [isAuthenticated, user, loading, login, signup, logout, skip],
+    () => ({ isAuthenticated, user, loading, initializing, login, signup, logout, skip }),
+    [isAuthenticated, user, loading, initializing, login, signup, logout, skip],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

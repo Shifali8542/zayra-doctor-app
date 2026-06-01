@@ -788,4 +788,39 @@ export const createClaimDetailScreenStyles = (theme: AppTheme) =>
       fontWeight: '700',
       fontSize: 10,
     },
+    // ── Notes textarea inside ActionPath ───────────────────────────────────
+    notesInput: {
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.20)',
+      backgroundColor: 'rgba(255,255,255,0.10)',
+      borderRadius: theme.radii.xl,
+      padding: theme.spacing.md,
+      color: '#FFFFFF',
+      fontSize: 14,
+      minHeight: 80,
+      textAlignVertical: 'top',
+      marginBottom: theme.spacing.lg,
+    },
+    // ── Orinn AI risk badge ────────────────────────────────────────────────
+    riskBadge: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      borderRadius: theme.radii.pill,
+    },
+    riskBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    recommendationBox: {
+      marginTop: theme.spacing.md,
+      backgroundColor: theme.colors.backgroundAlt,
+      borderRadius: theme.radii.lg,
+      padding: theme.spacing.md,
+    },
+    recommendationText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
   });

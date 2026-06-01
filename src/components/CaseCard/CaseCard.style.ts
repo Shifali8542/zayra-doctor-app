@@ -75,4 +75,17 @@ export const createCaseCardStyles = (theme: AppTheme) =>
       color: theme.colors.textTertiary,
       marginLeft: theme.spacing.xs,
     },
+    datasetPill: {
+      backgroundColor: theme.colors.backgroundAlt,
+      borderRadius: theme.radii.pill,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      maxWidth: 140,
+    },
+    datasetPillText: {
+      ...theme.typography.eyebrow,
+      color: theme.colors.textSecondary,
+      fontSize: 11,
+      fontWeight: '700',
+    },
   });

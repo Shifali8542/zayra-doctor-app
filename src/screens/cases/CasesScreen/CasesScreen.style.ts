@@ -3,6 +3,8 @@ import { AppTheme } from '../../../theme/theme';
 
 export const createCasesScreenStyles = (theme: AppTheme) =>
   StyleSheet.create({
+
+    // Status tabs 
     tabsWrap: {
       backgroundColor: theme.colors.surface,
       borderRadius: theme.radii.pill,
@@ -53,12 +55,62 @@ export const createCasesScreenStyles = (theme: AppTheme) =>
     tabBadgeTextActive: {
       color: theme.colors.textOnDark,
     },
-    empty: {
-      ...theme.typography.body,
-      color: theme.colors.textTertiary,
-      textAlign: 'center',
-      paddingVertical: theme.spacing.xxl,
+
+    // Dataset filter chips 
+    chipsScroll: {
+      flexDirection: 'row',
+      paddingHorizontal: 2,
+      paddingVertical: 2,
     },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.divider,
+      backgroundColor: theme.colors.surface,
+    },
+    chipGap: {
+      marginRight: theme.spacing.sm,
+    },
+    chipActive: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    chipText: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textSecondary,
+      fontWeight: '600',
+      fontSize: 12,
+    },
+    chipTextActive: {
+      color: theme.colors.textOnDark,
+    },
+
+    // Search bar 
+    searchWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radii.pill,
+      borderWidth: 1,
+      borderColor: theme.colors.divider,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
+      marginBottom: theme.spacing.lg,
+    },
+    searchInput: {
+      ...theme.typography.body,
+      color: theme.colors.textPrimary,
+      flex: 1,
+      paddingVertical: 4,
+      marginLeft: theme.spacing.sm,
+    },
+    searchClear: {
+      padding: 4,
+    },
+
+    // Completed / Missed / Escalated table 
     completedCard: {
       paddingHorizontal: theme.spacing.lg,
     },
@@ -77,14 +129,15 @@ export const createCasesScreenStyles = (theme: AppTheme) =>
     },
     completedRow: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       paddingVertical: theme.spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.divider,
     },
     completedCaseId: {
-      ...theme.typography.body,
+      ...theme.typography.bodySmall,
       color: theme.colors.textTertiary,
+      fontSize: 12,
     },
     completedAnomaly: {
       ...theme.typography.bodyStrong,
@@ -95,6 +148,14 @@ export const createCasesScreenStyles = (theme: AppTheme) =>
     completedPatient: {
       ...theme.typography.bodySmall,
       color: theme.colors.textTertiary,
+    },
+
+    // ── Status / error / empty states ─────────────────────────────────────────
+    empty: {
+      ...theme.typography.body,
+      color: theme.colors.textTertiary,
+      textAlign: 'center',
+      paddingVertical: theme.spacing.xxl,
     },
     statusWrap: {
       paddingVertical: theme.spacing.xxl,
@@ -117,28 +178,7 @@ export const createCasesScreenStyles = (theme: AppTheme) =>
       marginTop: theme.spacing.xs,
     },
 
-    // ── Search bar ────────────────────────────────────────────────────────────
-    searchWrap: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.radii.pill,
-      borderWidth: 1,
-      borderColor: theme.colors.divider,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.sm,
-      marginBottom: theme.spacing.lg,
-      gap: theme.spacing.sm as any,
-    },
-    searchInput: {
-      ...theme.typography.body,
-      color: theme.colors.textPrimary,
-      flex: 1,
-      paddingVertical: 4,
-    },
-    searchClear: {
-      padding: 4,
-    },
+    // Footer
     footerLoader: {
       paddingVertical: theme.spacing.xl,
       alignItems: 'center',

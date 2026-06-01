@@ -19,8 +19,8 @@ export type AppStackParamList = {
 export type AppTabsParamList = {
   PulseDesk: undefined;
   Cases: undefined;
-  TraceView: undefined;
-  Alyna: undefined;
+  TraceView: { patientId?: number; caseId?: number } | undefined;
+  Alyna: { patientId?: number } | undefined;
   Impact: undefined;
 };
 

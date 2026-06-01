@@ -5,7 +5,6 @@ import type {
   CaseViewModel,
   ClinicalInfoResponse,
   DiagnosisClass,
-  DiagnosisSummaryResponse,
   DoctorProfileViewModel,
   DoctorStatsViewModel,
   ImpactStatsViewModel,
@@ -16,7 +15,6 @@ import type {
   PhysiologySnapshotViewModel,
   Severity,
   STStatus,
-  STSummaryResponse,
   STSummaryRow,
   TimelineEventViewModel,
   UserProfile,
@@ -63,11 +61,8 @@ const formatCaseId = (patientCode: string): string => {
   return `ZC-${digits}`;
 };
 
-/**
- * Returns a human-readable dataset label.
- * Prefers the backend's `dataset_source_display` field; if missing,
- * formats the raw `dataset_source` enum into a readable name.
- */
+
+// Returns a human-readable dataset label.
 const formatDatasetLabel = (
   source: string | null | undefined,
   display: string | null | undefined,
@@ -92,15 +87,9 @@ const looksLikeCode = (s: string | null | undefined): boolean => {
   if (!s) return true;
   const trimmed = s.trim();
   if (!trimmed) return true;
-  // All digits, commas, semicolons, dots, or whitespace = code list
   return /^[\d.,;\s]+$/.test(trimmed);
 };
 
-/**
- * Picks the most human-readable diagnosis name from a patient payload.
- * Never returns a raw SNOMED/SCP code string — falls through to a
- * generic label if everything we have looks like a code.
- */
 const pickReadableDiagnosis = (
   p: { display_diagnosis: string | null; diagnosis: string | null },
   fallback = 'Anomaly detected',
@@ -134,9 +123,8 @@ export const patientListItemToCase = (
     patientCode: p.patient_code,
     hr: null,
     hrDelta: null,
-    spo2: null,
     confidence: 0,
-    signalQ: 'Q—',
+    signalQ: formatSignalQ(null),
     viewing: opts.viewing ?? 0,
     ageMinutes: opts.ageMinutes ?? 0,
     status: opts.status ?? 'live',
@@ -167,9 +155,8 @@ export const stSummaryRowToCase = (
     patientCode: row.patient_code,
     hr: null,
     hrDelta: null,
-    spo2: null,
     confidence: row.confidence_score ?? 0,
-    signalQ: row.confidence_score ? `Q${row.confidence_score}` : 'Q—',
+    signalQ: formatSignalQ(row.quality_score ?? null),
     ageMinutes,
     viewing: 0,
     status: 'live',
@@ -200,9 +187,8 @@ export const caseReviewToViewModel = (c: CaseReview): CaseViewModel => {
     patientCode: c.patient_code,
     hr: c.heart_rate_bpm ?? null,
     hrDelta: null,
-    spo2: null,
     confidence: c.confidence_score ?? 0,
-    signalQ: c.confidence_score ? `Q${c.confidence_score}` : 'Q—',
+    signalQ: formatSignalQ(null),
     viewing: 1,
     ageMinutes,
     status: (c.status === 'missed' || c.status === 'escalated' ? 'completed' : c.status) as CaseViewModel['status'],
@@ -222,7 +208,7 @@ export const patientDetailToContext = (
       : !looksLikeCode(p.diagnosis)
         ? (p.diagnosis as string)
         : '—';
- return {
+  return {
     sex: sexToInitial(p.sex),
     age: p.age ?? 0,
     comorbidities,
@@ -247,7 +233,6 @@ export const clinicalInfoToPhysiology = (
   return {
     pulse: { value: hr ?? 0, baseline: 0 },
     hrv: { value: hrv ?? 0, baseline: 0, unit: 'ms' },
-    spo2: { value: 0, baseline: 0 },
     recovery: hr !== null && hr > 0 ? (hr > 110 ? 'Low' : hr > 90 ? 'Moderate' : 'High') : 'Moderate',
     recoveryNote: '—',
   };
@@ -274,19 +259,19 @@ export const caseHistoryToTimeline = (
   return history.map((h) => ({
     when: h.when
       ? new Date(h.when).toLocaleDateString('en-US', {
-          month: 'short', day: 'numeric', year: 'numeric',
-        })
+        month: 'short', day: 'numeric', year: 'numeric',
+      })
       : '—',
     description: h.description,
-    recordId:       (h as any).record_id       ?? undefined,
-    recordName:     (h as any).record_name     ?? undefined,
-    status:         h.status,
-    severity:       (h as any).severity        ?? undefined,
-    heartRateBpm:   (h as any).heart_rate_bpm  ?? null,
-    hrvMs:          (h as any).hrv_ms          ?? null,
-    stStatus:       (h as any).st_status       ?? null,
+    recordId: (h as any).record_id ?? undefined,
+    recordName: (h as any).record_name ?? undefined,
+    status: h.status,
+    severity: (h as any).severity ?? undefined,
+    heartRateBpm: (h as any).heart_rate_bpm ?? null,
+    hrvMs: (h as any).hrv_ms ?? null,
+    stStatus: (h as any).st_status ?? null,
     stemiSuspected: (h as any).stemi_suspected ?? null,
-    doctorName:     h.doctor_name              ?? null,
+    doctorName: h.doctor_name ?? null,
   }));
 };
 
@@ -294,37 +279,47 @@ export const aiAnalysisToAlynaSeed = (
   patientId: number,
   ai?: AIAnalysisResult | null,
 ): AlynaMessageViewModel[] => {
+  // No Orinn result yet or analysis failed — show neutral intro with no confidence score.
+  // Never fabricate a confidence value; omit it entirely so the UI renders no badge.
   if (!ai) {
     return [
       {
         id: 'm1',
         role: 'assistant',
         text: `I'm Alyna. I have full context on patient #${patientId}. Ask me anything about the rhythm, the patient timeline, or what changed from baseline.`,
-        confidence: 90,
+        // confidence intentionally omitted — no real data available
       },
     ];
   }
-  const conf = ai.risk_score ?? 0;
+
+  // risk_score is a real value from Orinn AI (0–100). Only attach it when present.
+  const conf = ai.risk_score ?? undefined;
   const tags = (ai.findings ?? []).slice(0, 3);
+
   return [
     {
       id: 'm1',
       role: 'assistant',
-      text: `I'm Alyna. I have full context on patient #${patientId}. Risk level: ${ai.risk_level}. Ask me anything about the rhythm, timeline, or what changed from baseline.`,
+      text: `I'm Alyna. I have full context on patient #${patientId}. Risk level: ${ai.risk_level ?? 'unknown'}. Ask me anything about the rhythm, timeline, or what changed from baseline.`,
       confidence: conf,
     },
     ...(ai.narrative
       ? [
-          {
-            id: 'm2',
-            role: 'assistant' as const,
-            text: ai.narrative,
-            confidence: conf,
-            tags,
-          },
-        ]
+        {
+          id: 'm2',
+          role: 'assistant' as const,
+          text: ai.narrative,
+          confidence: conf,
+          tags,
+        },
+      ]
       : []),
   ];
+};
+
+export const formatSignalQ = (qualityScore: number | null | undefined): string => {
+  if (qualityScore == null) return 'Q—';
+  return `Q${Math.round(qualityScore)}`;
 };
 
 export const userProfileToDoctorView = (
@@ -349,13 +344,13 @@ export const userProfileToDoctorView = (
   };
 };
 
-export const summaryToDoctorStats = (
-  _s: DiagnosisSummaryResponse | null,
+export const impactStatsToDoctorStats = (
+  s: import('../types').ImpactStatsResponse | null,
 ): DoctorStatsViewModel => ({
-  avgResponseSec: 0,
-  todayEarningsUsd: 0,
-  confidencePct: 0,
-  streakDays: 0,
+  avgResponseSec: s?.avg_response_sec ?? 0,
+  todayEarningsUsd: s?.reviewed_count ?? 0,
+  confidencePct: s?.confidence_score ?? 0,
+  streakDays: s?.streak_days ?? 0,
 });
 
 export const impactStatsToViewModel = (
@@ -381,37 +376,4 @@ export const impactMomentsToViewModel = (
       : '—',
     description: m.description,
   }));
-};
-
-// Keep for any existing callers that haven't been migrated yet
-export const summaryToImpactStats = (
-  s: DiagnosisSummaryResponse | null,
-  st?: STSummaryResponse | null,
-): ImpactStatsViewModel => ({
-  rankPct: 0,
-  totalDoctors: Math.max(1, s?.total_patients ?? 1),
-  reviewed: s?.total_records ?? 0,
-  escalations: st?.stemi_count ?? 0,
-  avgResponseSec: 0,
-  streakDays: 0,
-  decisionConfidence: 0,
-  reliability: 0,
-});
-
-export const stSummaryToLifesavingMoments = (
-  st: STSummaryResponse | null,
-): LifesavingMomentViewModel[] => {
-  if (!st) return [];
-  return st.results
-    .filter((r) => r.stemi_suspected)
-    .slice(0, 3)
-    .map((r, i) => {
-      const labels = ['TODAY', 'YESTERDAY', '3 DAYS AGO'];
-      return {
-        when: labels[i] ?? `${i + 1} DAYS AGO`,
-        description: `Escalated ${
-          r.affected_region !== 'none' ? r.affected_region.toUpperCase() : 'STEMI'
-        } in ${r.patient_code} — analysis confirmed`,
-      };
-    });
 };

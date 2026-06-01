@@ -158,6 +158,7 @@ export interface WaveformResponse {
   num_samples: number;
   duration_seconds: number | null;
   channel_names: string[];
+  all_channel_names: string[];
   units: string[];
   waveforms: Record<string, number[]>;
   segments: Partial<WaveformSegments>;
@@ -215,6 +216,7 @@ export interface EcgAnalysis {
   axis_deg?: number | null;
   pr_interval_ms?: number | null;
   st_elevation_mm?: number | null;
+  quality_score?: number | null; 
   error?: string;
   [k: string]: unknown;
 }
@@ -238,7 +240,7 @@ export interface ClinicalInfoResponse {
   diagnoses: string[];
 }
 
-/* ── 5. AI Analysis + ST-Elevation ──────────────────────────────── */
+/* ── 5. AI Analysis + ST-Elevation */
 
 export type RiskLevel = 'Low' | 'Moderate' | 'High' | 'Critical';
 
@@ -297,6 +299,7 @@ export interface STElevationResult {
 }
 
 export interface STSummaryRow {
+  quality_score: null;
   patient_id: number;
   patient_code: string;
   record_name: string;
@@ -313,15 +316,6 @@ export interface STSummaryResponse {
   stemi_count: number;
   status_breakdown: { overall_status: STStatus; count: number }[];
   results: STSummaryRow[];
-}
-
-/* 6. Stats  */
-
-export interface DiagnosisSummaryResponse {
-  total_patients: number;
-  total_records: number;
-  by_diagnosis: { diagnosis: string | null; count: number }[];
-  diagnosis_class_stats: Record<DiagnosisClass, number>;
 }
 
 export interface SplitStatsResponse {
@@ -355,7 +349,7 @@ export interface DatasetOverviewResponse {
   grand_total_patients: number;
   grand_total_records: number;
 }
-/* ── 6b. Cases (matches case_reviews serializers.py) ────────────── */
+/* 6b. Cases */
 
 export type CaseStatus = 'live' | 'claimed' | 'completed' | 'missed' | 'escalated';
 export type CaseSeverity = 'normal' | 'routine' | 'urgent' | 'critical';
@@ -376,6 +370,7 @@ export interface CaseReview {
   heart_rate_bpm: number | null;
   hrv_ms: number | null;
   confidence_score: number | null;
+  quality_score: number | null;
   notes: string | null;
   outcome: string;
   doctor_name: string | null;
@@ -511,7 +506,6 @@ export interface CaseViewModel {
   patientCode: string;
   hr: number | null;
   hrDelta?: number | null;
-  spo2: number | null;
   confidence: number;
   signalQ: string;
   viewing: number;
@@ -664,12 +658,11 @@ export interface PatientContextViewModel {
 export interface PhysiologySnapshotViewModel {
   pulse: { value: number; baseline: number };
   hrv: { value: number; baseline: number; unit: string };
-  spo2: { value: number; baseline: number };
   recovery: 'Low' | 'Moderate' | 'High';
   recoveryNote: string;
 }
 
-/* ── 8. Component-local types ───────────────────────────────────── */
+/* a8. Component-local types */
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'glass';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -707,12 +700,32 @@ export type AppStackParamList = {
 export type AppTabsParamList = {
   PulseDesk: undefined;
   Cases: undefined;
-  TraceView: { patientId?: number } | undefined;
+  TraceView: { patientId?: number; caseId?: number } | undefined;
   Alyna: { patientId?: number } | undefined;
   Impact: undefined;
 };
 
-/* ── 9. Theme ───────────────────────────────────────────────────── */
+export interface WaveformAnalysisResponse {
+  patient_code?: string;
+  record_name?: string;
+  lead_analyzed?: string;
+  sampling_rate?: number;
+  heart_rate_bpm: number | null;
+  hrv_ms: number | null;
+  rhythm: string | null;
+  quality_score: number | null;
+  num_beats: number | null;
+  wave_counts?: {
+    P?: number; Q?: number; R?: number; S?: number; T?: number; error?: string;
+  };
+  wave_intervals?: {
+    pr_interval_ms: number | null;
+    qrs_duration_ms: number | null;
+    qt_interval_ms: number | null;
+  };
+}
+
+/* 9. Theme */
 
 export type ThemeMode = 'light' | 'dark';
 

@@ -5,7 +5,6 @@ import type {
   CaseReview,
   ClinicalInfoResponse,
   DatasetOverviewResponse,
-  DiagnosisSummaryResponse,
   DoctorRegistrationRequest,
   ImpactMomentsResponse,
   ImpactStatsResponse,
@@ -35,7 +34,6 @@ export const ENDPOINTS = {
 
   // Patients
   patients: '/patients/',
-  patientSummary: '/patients/summary/',
   patientSplitStats: '/patients/split-stats/',
   patientDatasetOverview: '/patients/dataset-overview/',
   patientDetail: (id: number) => `/patients/${id}/`,
@@ -72,7 +70,8 @@ export const ENDPOINTS = {
   impactMoments: '/impact/moments/',
 } as const;
 
-// Token store (in-memory). Replace with persistent storage later.
+// Token store (in-memory)
+export const SECURE_TOKEN_KEY = 'zayra_auth_tokens';
 
 let _tokens: AuthTokens | null = null;
 
@@ -83,9 +82,7 @@ export const setAuthTokens = (tokens: AuthTokens | null): void => {
 export const getAccessToken = (): string | null => _tokens?.access ?? null;
 export const getRefreshToken = (): string | null => _tokens?.refresh ?? null;
 
-/* ──────────────────────────────────────────────────────────────────
- * Low-level request helper
- * ────────────────────────────────────────────────────────────────── */
+// Low-level request helper
 
 export class ApiHttpError extends Error {
   constructor(
@@ -250,7 +247,7 @@ export const patientsApi = {
       ENDPOINTS.patientRecords(id),
     ),
 
- waveform: (
+  waveform: (
     id: number,
     opts?: { record_id?: number; channels?: string; downsample?: number },
   ) =>
@@ -279,6 +276,12 @@ export const patientsApi = {
     request<import('../types').RecordComparisonResponse>(
       ENDPOINTS.patientRecordComparison(id),
       { timeoutMs: 120_000 },
+    ),
+
+  waveformAnalysis: (id: number, opts?: { record_id?: number }) =>
+    request<import('../types').WaveformAnalysisResponse>(
+      ENDPOINTS.patientWaveformAnalysis(id),
+      { query: opts },
     ),
 };
 
@@ -321,6 +324,7 @@ export interface CaseListQuery {
   severity?: 'normal' | 'routine' | 'urgent' | 'critical';
   mine?: boolean;
   search?: string;
+  dataset_source?: string;
   page?: number;
   page_size?: number;
   [key: string]: string | number | boolean | undefined | null;
@@ -374,11 +378,7 @@ export const impactApi = {
 
 // STATS API
 export const statsApi = {
-  diagnosisSummary: () =>
-    request<DiagnosisSummaryResponse>(ENDPOINTS.patientSummary),
-
   splitStats: () => request<SplitStatsResponse>(ENDPOINTS.patientSplitStats),
-
   datasetOverview: () =>
     request<DatasetOverviewResponse>(ENDPOINTS.patientDatasetOverview),
 };

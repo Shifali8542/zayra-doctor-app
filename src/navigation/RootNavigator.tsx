@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAppTheme } from '../context/ThemeContext';
 
 export const RootNavigator: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, initializing } = useAuth();
   const theme = useAppTheme();
 
   const navTheme = {
@@ -20,6 +20,8 @@ export const RootNavigator: React.FC = () => {
       primary: theme.colors.primary,
     },
   };
+
+  if (initializing) return null;
 
   return (
     <NavigationContainer theme={navTheme}>
