@@ -11,7 +11,7 @@ export const useDashboard = () => {
   const profileQ  = useApi(() => api.auth.profile(), []);
   const impactQ   = useApi(() => api.impact.stats(), []);
   const casesQ    = useApi(
-    () => api.cases.list({ status: 'live', page_size: 5 }),
+    () => api.cases.list({ status: 'live', page_size: 3 }),
     [],
   );
   const stats = useMemo(

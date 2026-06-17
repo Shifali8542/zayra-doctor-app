@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +22,11 @@ interface AlynaScreenProps {
 }
 
 export const AlynaScreen: React.FC<AlynaScreenProps> = ({ navigation, route }) => {
+  console.log('[AlynaScreen] render');
+  useEffect(() => {
+    console.log('[AlynaScreen] mounted');
+    return () => console.log('[AlynaScreen] UNMOUNTED');
+  }, []);
   const theme = useAppTheme();
   const styles = createAlynaScreenStyles(theme);
   const patientId: number | undefined = route?.params?.patientId;

@@ -13,6 +13,8 @@ import { formatSeconds } from '../../../utils/format';
 
 interface ImpactScreenProps {
   navigation: any;
+  unreadCount?: number;
+  onBellPress?: () => void;
 }
 
 interface ImpactStatProps {
@@ -48,14 +50,18 @@ const ProgressBar: React.FC<{ value: number; max: number }> = ({
   );
 };
 
-export const ImpactScreen: React.FC<ImpactScreenProps> = ({ navigation }) => {
+export const ImpactScreen: React.FC<ImpactScreenProps> = ({ navigation, unreadCount = 0, onBellPress }) => {
   const theme = useAppTheme();
   const styles = createImpactScreenStyles(theme);
   const { stats, moments, loading, refetch } = useImpact();
 
   return (
 <Layout scroll padded edges={['top']} bottomInsetExtra={92} onRefresh={refetch} refreshing={loading}>
-      <Header onProfilePress={() => navigation.navigate('Profile')} />
+      <Header
+        onProfilePress={() => navigation.navigate('Profile')}
+        onBellPress={onBellPress}
+        unreadCount={unreadCount}
+      />
 
       <SectionTitle
         title="Impact"

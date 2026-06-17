@@ -16,6 +16,8 @@ import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'reac
 
 interface HomeScreenProps {
   navigation: any;
+  unreadCount?: number;
+  onBellPress?: () => void;
 }
 const ECG_PATH = `M 0 36
 L 10 36 L 15 30 L 20 36
@@ -102,11 +104,21 @@ const EcgWaveform: React.FC = () => {
   );
 };
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, unreadCount = 0, onBellPress }) => {
+  console.log('[HomeScreen] render');
   const theme = useAppTheme();
   const styles = createHomeScreenStyles(theme);
   const { stats, profile, liveCases, pendingCount, loading, error, refetch } =
     useDashboard();
+
+  useEffect(() => {
+    console.log('[HomeScreen] mounted');
+    return () => console.log('[HomeScreen] UNMOUNTED');
+  }, []);
+
+  useEffect(() => {
+    console.log('[HomeScreen] liveCases count:', liveCases.length, '| loading:', loading, '| error:', error);
+  }, [liveCases, loading, error]);
 
   const [homeSearch, setHomeSearch] = useState('');
   const firstName = profile?.name ? profile.name.split(' ').slice(-1)[0] : 'Doctor';
@@ -135,7 +147,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       onRefresh={refetch}
       refreshing={loading}
     >
-      <Header onProfilePress={() => navigation.navigate('Profile')} />
+      <Header
+        onProfilePress={() => navigation.navigate('Profile')}
+        onBellPress={onBellPress}
+        unreadCount={unreadCount}
+      />
 
       <LinearGradient
         colors={[
@@ -249,6 +265,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             caseItem={c}
             onPress={() => goToClaim(c.patientId)}
             onClaim={() => goToClaim(c.patientId)}
+            showWaveform={false}
           />
         ))
       )}

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../../../api/api';
+import { api, } from '../../../api/api';
 import { caseHistoryToTimeline } from '../../../api/adapters';
 import { useApi } from '../../../utils/useApi';
 import { waveformCache } from '../../traceview/waveformCache';
+import type { BLEMIPrediction } from '../../../types';
 import type {
   AIAnalysisResult,
   CaseDetailFull,
@@ -17,6 +18,7 @@ import type {
 } from '../../../types';
 
 export const useClaim = (caseId?: number) => {
+  console.log('[useClaim] called with caseId:', caseId);
   const detailQ = useApi(
     () =>
       caseId
@@ -38,6 +40,7 @@ export const useClaim = (caseId?: number) => {
 
   const detail: CaseDetailFull | null = detailQ.data ?? null;
   const patientId = detail?.patient?.id;
+  console.log('[useClaim] detail loading:', detailQ.loading, '| error:', detailQ.error, '| patientId:', patientId);
 
   // Active ECG record ID
   const currentRecordId = useMemo(
@@ -99,47 +102,45 @@ export const useClaim = (caseId?: number) => {
     setWaveformLoading(true);
   }, []);
 
-  // Supporting API calls
-  const recordsQ = useApi(
+  const recordsQ = useApi<import('../../../types').PatientRecordsResponse>(
     () =>
       patientId
         ? api.patients.recordsHistory(patientId)
-        : Promise.reject(new Error('no patientId')),
+        : Promise.resolve({ patient_code: '', count: 0, records: [] } as import('../../../types').PatientRecordsResponse),
     [patientId],
   );
 
-  // This ensures clinicalQ fires immediately — not only after an explicit record switch.
-  const clinicalQ = useApi(
+  const clinicalQ = useApi<import('../../../types').ClinicalInfoResponse>(
     () =>
       patientId && currentRecordId
         ? api.patients.clinicalInfo(patientId, { record_id: currentRecordId })
-        : Promise.reject(new Error('no patientId or record')),
+        : Promise.resolve(null as any),
     [patientId, currentRecordId],
   );
 
-  const comparisonQ = useApi(
+  const comparisonQ = useApi<import('../../../types').RecordComparisonResponse>(
     () =>
       patientId
         ? api.patients.recordComparison(patientId)
-        : Promise.reject(new Error('no patientId')),
+        : Promise.resolve({ patient_code: '', count: 0, records: [] } as import('../../../types').RecordComparisonResponse),
     [patientId],
   );
 
-  // AI analysis
-  const aiAnalysisQ = useApi(
+  const aiAnalysisQ = useApi<import('../../../types').AIAnalysisEnvelope>(
     () =>
       patientId && currentRecordId
         ? api.assessments.aiAnalysis(patientId, { record_id: currentRecordId })
-        : Promise.reject(new Error('no record')),
+        : Promise.resolve(null as any),
     [patientId, currentRecordId],
   );
 
-  // ST elevation result — re-fetches per record, read-only (no new analysis triggered).
-  const stResultQ = useApi(
+  const stResultQ = useApi<{ patient: string; record: string; diagnosis: string | null; result: import('../../../types').STElevationResult }>(
     () =>
       patientId && currentRecordId
-        ? api.assessments.stResult(patientId, currentRecordId)
-        : Promise.reject(new Error('no record')),
+        ? new Promise((resolve) =>
+            setTimeout(() =>
+              api.assessments.stResult(patientId, currentRecordId).then(resolve), 2000))
+        : Promise.resolve(null as any),
     [patientId, currentRecordId],
   );
 
@@ -261,6 +262,16 @@ export const useClaim = (caseId?: number) => {
     }
   }, [caseId, detailQ]);
 
+  // BLE predictions — poll every 30s for live MI predictions from this patient
+  const patientCode = detail?.patient?.patient_code ?? null;
+  const blePredictionsQ = useApi<import('../../../types').BLEMIPredictionListResponse>(
+    () =>
+      patientCode
+        ? api.ble.getPredictions(patientCode, 10)
+        : Promise.resolve({ count: 0, results: [] }),
+    [patientCode],
+  );
+
   // Return
   return {
     detail,
@@ -286,6 +297,7 @@ export const useClaim = (caseId?: number) => {
     clinicalLoading:   clinicalQ.loading,
     comparisonLoading: comparisonQ.loading,
     comparisonError:   comparisonQ.error,
+    clinicalData:      clinicalQ.data,
 
     // Case data
     aiAnalysis:     detail?.orinn ?? null,
@@ -301,6 +313,9 @@ export const useClaim = (caseId?: number) => {
     escalateCase,
     isActioning,
     actionError,
+
+    blePredictions: (blePredictionsQ.data?.results ?? []) as BLEMIPrediction[],
+    blePredictionsLoading: blePredictionsQ.loading,
 
     loading: detailQ.loading,
     error:   detailQ.error,

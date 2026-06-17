@@ -33,4 +33,23 @@ export const createHeaderStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.surface,
     },
     pressed: { opacity: 0.7 },
+    bellBadge: {
+      position: 'absolute',
+      top: -4,
+      right: -4,
+      minWidth: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: '#EF4444',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 3,
+      borderWidth: 1.5,
+      borderColor: theme.colors.surface,
+    },
+    bellBadgeText: {
+      color: '#fff',
+      fontSize: 9,
+      fontWeight: '700',
+    },
   });

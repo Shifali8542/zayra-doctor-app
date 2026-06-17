@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -12,6 +12,7 @@ const logoImage = require('../../assets/icon.png');
 interface HeaderProps {
   onProfilePress?: () => void;
   onBellPress?: () => void;
+  unreadCount?: number;
 }
 
 const computeInitials = (
@@ -27,6 +28,7 @@ const computeInitials = (
 export const Header: React.FC<HeaderProps> = ({
   onProfilePress,
   onBellPress,
+  unreadCount = 0,
 }) => {
   const theme = useAppTheme();
   const navigation = useNavigation<any>();
@@ -53,6 +55,13 @@ export const Header: React.FC<HeaderProps> = ({
           hitSlop={6}
         >
           <Icon name="bell" size={18} color={theme.colors.textPrimary} strokeWidth={1.8} />
+          {unreadCount > 0 && (
+            <View style={styles.bellBadge}>
+              <Text style={styles.bellBadgeText}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Text>
+            </View>
+          )}
         </Pressable>
 
         <Pressable

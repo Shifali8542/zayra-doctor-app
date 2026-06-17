@@ -260,6 +260,60 @@ export interface AIAnalysisEnvelope {
   analysis: AIAnalysisResult;
 }
 
+export interface AssignmentsResponse {
+  count: number;
+  results: unknown[];
+}
+
+export interface WSMIAlert {
+  type: 'mi_alert' | 'ble_reading' | 'connected';
+  alert_id?: string;
+  patient_code?: string;
+  patient_id?: number;
+  ecg_record_id?: number;
+  mi_detected?: boolean;
+  confidence?: number;
+  severity?: 'NORMAL' | 'WARNING' | 'CRITICAL';
+  recommendation?: string;
+  probabilities?: { NORM: number; MI: number };
+  model_name?: string;
+  timestamp?: string;
+  message?: string;
+}
+
+export interface AlertClaimedEvent {
+  type: 'alert_claimed';
+  alert_id: string;
+  claimed_by: string;
+  claimed_at: string;
+}
+
+export interface WSDoctorNotification extends DoctorNotification {
+  type: 'doctor_notification';
+  unread_count: number;
+}
+
+export interface BLEMIPrediction {
+  id: number;
+  mi_detected: boolean;
+  confidence: number;
+  prob_mi: number;
+  severity: 'NORMAL' | 'WARNING' | 'CRITICAL';
+  recommendation: string;
+  model_name: string;
+  analysis_time_ms: number | null;
+  samples_used: number | null;
+  patient_context: Record<string, unknown>;
+  created_at: string;
+  ecg_record_id: number;
+  patient_code: string;
+}
+
+export interface BLEMIPredictionListResponse {
+  count: number;
+  results: BLEMIPrediction[];
+}
+
 export type STStatus =
   | 'Normal'
   | 'At Risk'
@@ -786,3 +840,41 @@ export interface ThemeColors {
 
 export type StyleSheetStyles<T> = { [K in keyof T]: ViewStyle | TextStyle };
 export type DeviceType = 'mobile' | 'tablet' | 'desktop';
+/* ── 10. Earnings (mock + real API) ─────────────────────────────── */
+export interface EarningSummary {
+  today: number;
+  thisWeek: number;
+  thisMonth: number;
+  pendingPayout: number;
+}
+export interface EarningsBySeverity { label: string; amount: number; max: number; }
+export interface RecentReviewRow {
+  caseId: string; anomaly: string; severity: CaseSeverity;
+  completedAt: string; payout: number;
+}
+
+/* ── 11. Grand Rounds (mock) ─────────────────────────────────────── */
+export interface GrandRoundsThread {
+  id: string; initials: string; authorName: string; specialty: string;
+  timeAgo: string; title: string; replies: number; saved: number;
+}
+
+/* ── 12. ECG Atlas (mock) ────────────────────────────────────────── */
+export type AtlasDifficulty = 'Beginner' | 'Intermediate' | 'Advanced';
+export interface AtlasCase {
+  id: string; tag: string; durationMin: number; title: string;
+  difficulty: AtlasDifficulty; strokeColor: string;
+}
+
+/* ── 13. Notifications ───────────────────────────────────────────── */
+export interface DoctorNotification {
+  id: number; notification_type: 'mi_alert' | 'patient_online';
+  title: string; message: string; payload: Record<string, unknown>;
+  is_read: boolean; created_at: string;
+}
+export interface NotificationListResponse {
+  count: number; unread: number; results: DoctorNotification[];
+}
+export interface NotificationCountResponse {
+  unread: number; mi_alerts: number; patient_online: number;
+}

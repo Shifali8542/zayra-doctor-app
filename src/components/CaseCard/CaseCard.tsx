@@ -16,6 +16,7 @@ interface CaseCardProps {
   onPress?: () => void;
   onClaim?: () => void;
   showClaim?: boolean;
+  showWaveform?: boolean;
 }
 
 export const CaseCard: React.FC<CaseCardProps> = React.memo(({
@@ -23,6 +24,7 @@ export const CaseCard: React.FC<CaseCardProps> = React.memo(({
   onPress,
   onClaim,
   showClaim = true,
+  showWaveform = true,
 }) => {
 
   const theme = useAppTheme();
@@ -54,7 +56,7 @@ export const CaseCard: React.FC<CaseCardProps> = React.memo(({
           {caseItem.patientSex} · {caseItem.patientAge}y · {caseItem.patientCode}
         </Text>
 
-        <WaveformPlaceholder seed={seedFromId} style={styles.waveform} />
+        {showWaveform && <WaveformPlaceholder seed={seedFromId} style={styles.waveform} />}
 
         <View style={styles.metricsRow}>
           <MetricCard

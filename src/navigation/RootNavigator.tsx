@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
@@ -9,7 +9,7 @@ export const RootNavigator: React.FC = () => {
   const { isAuthenticated, initializing } = useAuth();
   const theme = useAppTheme();
 
-  const navTheme = {
+  const navTheme = useMemo(() => ({
     ...(theme.mode === 'dark' ? DarkTheme : DefaultTheme),
     colors: {
       ...(theme.mode === 'dark' ? DarkTheme.colors : DefaultTheme.colors),
@@ -19,7 +19,7 @@ export const RootNavigator: React.FC = () => {
       border: theme.colors.divider,
       primary: theme.colors.primary,
     },
-  };
+  }), [theme.mode, theme.colors]);
 
   if (initializing) return null;
 

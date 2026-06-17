@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Layout } from '../../../components/Layout/Layout';
 import { Header } from '../../../components/Header/Header';
@@ -18,10 +18,11 @@ interface TraceViewScreenProps {
   route?: any;
 }
 
-export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
-  navigation,
-  route,
-}) => {
+export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({ navigation, route }) => {
+  useEffect(() => {
+    console.log('[TraceViewScreen] mounted, params:', JSON.stringify(route?.params));
+    return () => console.log('[TraceViewScreen] UNMOUNTED');
+  }, []);
   const theme = useAppTheme();
   const styles = createTraceViewScreenStyles(theme);
   const { deviceType, width: screenWidth } = useResponsive();
@@ -112,7 +113,7 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({
           {/* Page header row — back + severity + view toggle */}
           <View style={styles.pageHeaderRow}>
             <Pressable
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Tabs')}
               style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
             >
               <Icon name="chevron-left" size={16} color={theme.colors.textSecondary} />

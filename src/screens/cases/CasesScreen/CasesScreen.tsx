@@ -136,16 +136,15 @@ const SearchResultRow: React.FC<{
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // CasesScreen
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface CasesScreenProps {
   navigation: any;
+  unreadCount?: number;
+  onBellPress?: () => void;
 }
 
-export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
-  const theme = useAppTheme();
+export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation, unreadCount = 0, onBellPress }) => {
+  const theme  = useAppTheme();
   const styles = createCasesScreenStyles(theme);
   const insets = useSafeAreaInsets();
 
@@ -335,7 +334,11 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ navigation }) => {
     >
       <View style={{ paddingHorizontal: theme.spacing.lg }}>
 
-        <Header onProfilePress={() => navigation.navigate('Profile')} />
+        <Header
+          onProfilePress={() => navigation.navigate('Profile')}
+          onBellPress={onBellPress}
+          unreadCount={unreadCount}
+        />
 
         <SectionTitle
           title="Cases"

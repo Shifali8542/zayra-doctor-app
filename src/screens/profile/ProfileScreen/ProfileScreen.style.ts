@@ -33,17 +33,8 @@ export const createProfileScreenStyles = (theme: AppTheme) =>
       textAlign: 'center',
       marginBottom: theme.spacing.lg,
     },
-    licenseTagWrap: {
-      alignItems: 'center',
-      marginBottom: theme.spacing.sm,
-    },
-    licenseTag: {
-      backgroundColor: 'rgba(255,255,255,0.16)',
-    },
-    languagesTag: {
-      backgroundColor: 'rgba(255,255,255,0.10)',
-      alignSelf: 'center',
-    },
+    licenseTagWrap: { alignItems: 'center', marginBottom: theme.spacing.sm },
+    licenseTag: { backgroundColor: 'rgba(255,255,255,0.16)' },
 
     sectionTitle: {
       ...theme.typography.h2,
@@ -64,11 +55,7 @@ export const createProfileScreenStyles = (theme: AppTheme) =>
       fontSize: theme.fonts.sizes.lg,
       marginBottom: 2,
     },
-    rowDesc: {
-      ...theme.typography.bodySmall,
-      color: theme.colors.textTertiary,
-    },
-
+    rowDesc: { ...theme.typography.bodySmall, color: theme.colors.textTertiary },
     kvRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
@@ -76,26 +63,25 @@ export const createProfileScreenStyles = (theme: AppTheme) =>
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.divider,
     },
-    kvLabel: {
-      ...theme.typography.body,
-      color: theme.colors.textSecondary,
-      flex: 1,
+    kvLabel: { ...theme.typography.body, color: theme.colors.textSecondary, flex: 1 },
+    kvValue: { ...theme.typography.bodyStrong, color: theme.colors.textPrimary, flex: 1.4, textAlign: 'right' },
+    themeBtn: {
+      width: 40, height: 40, borderRadius: 20,
+      borderWidth: 1, borderColor: theme.colors.divider,
+      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: theme.colors.surface,
     },
-    kvValue: {
+    navLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.divider,
+      gap: theme.spacing.md,
+    },
+    navLinkLabel: {
       ...theme.typography.bodyStrong,
       color: theme.colors.textPrimary,
-      flex: 1.4,
-      textAlign: 'right',
-    },
-
-    themeBtn: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: theme.colors.divider,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: theme.colors.surface,
+      flex: 1,
     },
   });

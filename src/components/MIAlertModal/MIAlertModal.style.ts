@@ -1,0 +1,106 @@
+import { StyleSheet, Dimensions } from 'react-native';
+import { AppTheme } from '../../theme/theme';
+
+export const createMIAlertModalStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.60)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing.lg,
+    },
+    scroll: { width: '100%' },
+    scrollContent: { gap: theme.spacing.md },
+    card: {
+      width: '100%',
+      maxWidth: 420,
+      borderRadius: theme.radii.xxl,
+      borderWidth: 1,
+      borderTopWidth: 4,
+      borderColor: theme.colors.border,
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.22,
+      shadowRadius: 16,
+      elevation: 12,
+    },
+    accentBar: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 4,
+      borderTopLeftRadius: theme.radii.xxl,
+      borderBottomLeftRadius: theme.radii.xxl,
+    },
+    cardBody: { paddingLeft: 20, paddingRight: 20, paddingTop: 16, paddingBottom: 20 },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: theme.spacing.lg,
+    },
+    eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+    pulseWrap: { width: 10, height: 10, alignItems: 'center', justifyContent: 'center' },
+    pulseDot: { width: 10, height: 10, borderRadius: 5 },
+    eyebrow: {
+      ...theme.typography.eyebrow,
+      fontWeight: '700',
+      letterSpacing: 1.4,
+    },
+    closeBtn: { padding: 4 },
+    patientRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginBottom: 4,
+    },
+    patientLabel: {
+      ...theme.typography.eyebrow,
+      color: theme.colors.textTertiary,
+      letterSpacing: 1.2,
+    },
+    patientCode: {
+      ...theme.typography.h1,
+      color: theme.colors.textPrimary,
+      fontWeight: '700',
+      marginBottom: theme.spacing.lg,
+    },
+    metricsRow: {
+      flexDirection: 'row',
+      gap: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+    },
+    metricChip: {
+      flex: 1,
+      borderRadius: theme.radii.lg,
+      borderWidth: 1,
+      backgroundColor: theme.colors.background,
+      padding: theme.spacing.md,
+    },
+    metricLabel: {
+      ...theme.typography.eyebrow,
+      color: theme.colors.textTertiary,
+      letterSpacing: 1.1,
+      marginBottom: 4,
+    },
+    metricValue: {
+      ...theme.typography.h2,
+      color: theme.colors.textPrimary,
+      fontWeight: '700',
+    },
+    recommendBox: {
+      borderRadius: theme.radii.lg,
+      borderWidth: 1,
+      padding: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+    },
+    recommendText: {
+      ...theme.typography.body,
+      color: theme.colors.textSecondary,
+      lineHeight: 22,
+    },
+    actions: { flexDirection: 'row', alignItems: 'center' },
+  });

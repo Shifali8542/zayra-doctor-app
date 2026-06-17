@@ -1,3 +1,9 @@
+/**
+ * ProfileScreen.tsx
+ * Matches doctor web's Profile page exactly.
+ * Real data: profile from /auth/profile/ API.
+ * Additional nav links to GrandRounds, Earnings, EcgAtlas (same as web sidebar).
+ */
 import React from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,15 +20,11 @@ import { useAppTheme, useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { createProfileScreenStyles } from './ProfileScreen.style';
 
-interface ProfileScreenProps {
-  navigation: any;
-}
+interface ProfileScreenProps { navigation: any; }
 
 const Row: React.FC<{
-  label: string;
-  description?: string;
-  rightSlot: React.ReactNode;
-  borderless?: boolean;
+  label: string; description?: string;
+  rightSlot: React.ReactNode; borderless?: boolean;
 }> = ({ label, description, rightSlot, borderless }) => {
   const theme = useAppTheme();
   const styles = createProfileScreenStyles(theme);
@@ -47,6 +49,23 @@ const KvRow: React.FC<{ label: string; value: string; borderless?: boolean }> = 
       <Text style={styles.kvLabel}>{label}</Text>
       <Text style={styles.kvValue}>{value}</Text>
     </View>
+  );
+};
+
+const NavLink: React.FC<{
+  icon: any; label: string; onPress: () => void; borderless?: boolean;
+}> = ({ icon, label, onPress, borderless }) => {
+  const theme = useAppTheme();
+  const styles = createProfileScreenStyles(theme);
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.navLink, borderless && { borderBottomWidth: 0 }, pressed && { opacity: 0.7 }]}
+    >
+      <Icon name={icon} size={18} color={theme.colors.textSecondary} strokeWidth={1.8} />
+      <Text style={styles.navLinkLabel}>{label}</Text>
+      <Icon name="chevron-right" size={16} color={theme.colors.textTertiary} strokeWidth={1.8} />
+    </Pressable>
   );
 };
 
@@ -77,56 +96,37 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     <Layout scroll padded edges={['top']} bottomInsetExtra={32}>
       <Header />
 
-      {/* Profile hero */}
+      {/* Profile hero — matches web gradient card */}
       <LinearGradient
         colors={[theme.colors.heroGradientFrom, theme.colors.heroGradientMid, theme.colors.heroGradientTo]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={styles.profileHero}
       >
-        <Avatar
-          initials={profile.initials}
-          size={112}
-          style={styles.profileAvatar}
-        />
+        <Avatar initials={profile.initials} size={112} style={styles.profileAvatar} />
         <Text style={styles.verifiedEyebrow}>VERIFIED CARDIOLOGIST</Text>
         <Text style={styles.profileName}>{profile.name}</Text>
         <Text style={styles.profileMeta}>
           {profile.specialty} · {profile.experienceYears} years · {profile.city}
         </Text>
-
         <View style={styles.licenseTagWrap}>
           <Tag
-            onDark
-            label="License verified"
+            onDark label="License verified"
             leftIcon={<Icon name="shield-check" size={13} color={theme.colors.textOnDark} />}
             style={styles.licenseTag}
           />
         </View>
-        <Tag
-          onDark
-          label={profile.languages.join(' · ')}
-          style={styles.languagesTag}
-        />
       </LinearGradient>
 
       {/* Availability */}
       <Card style={{ marginTop: theme.spacing.xl }}>
         <Text style={styles.sectionTitle}>Availability</Text>
-
         <Row
-          label="Available for review"
-          description="Receive live anomaly alerts"
-          rightSlot={
-            <Toggle value={available} onValueChange={toggleAvailable} />
-          }
+          label="Available for review" description="Receive live anomaly alerts"
+          rightSlot={<Toggle value={available} onValueChange={toggleAvailable} />}
         />
         <Row
-          label="Emergency-only mode"
-          description="Only critical-tier cases"
-          rightSlot={
-            <Toggle value={emergencyOnly} onValueChange={toggleEmergency} />
-          }
+          label="Emergency-only mode" description="Only critical-tier cases"
+          rightSlot={<Toggle value={emergencyOnly} onValueChange={toggleEmergency} />}
         />
         <KvRow label="Working hours" value={profile.workingHours} />
         <KvRow label="Severity filter" value={profile.severityFilters} borderless />
@@ -136,19 +136,23 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       <Card style={{ marginTop: theme.spacing.lg }}>
         <Text style={styles.sectionTitle}>Notifications</Text>
         <Row
-          label="Lock-screen medical alerts"
-          description="High-priority banner"
-          rightSlot={
-            <Toggle value={lockScreenAlerts} onValueChange={setLockScreenAlerts} />
-          }
+          label="Lock-screen medical alerts" description="High-priority banner"
+          rightSlot={<Toggle value={lockScreenAlerts} onValueChange={setLockScreenAlerts} />}
         />
         <Row
-          label="Haptic + sound"
-          description="Distinct tone per severity tier"
+          label="Haptic + sound" description="Distinct tone per severity tier"
           rightSlot={<Toggle value={hapticSound} onValueChange={setHapticSound} />}
         />
         <KvRow label="Sound profile" value="Pulse · Soft" />
         <KvRow label="Quiet hours" value="23:00 – 07:00 (emergency override)" borderless />
+      </Card>
+
+      {/* More — web sidebar "More" section */}
+      <Card style={{ marginTop: theme.spacing.lg }}>
+        <Text style={styles.sectionTitle}>More</Text>
+        <NavLink icon="book"         label="ECG Atlas"     onPress={() => navigation.navigate('EcgAtlas')} />
+        <NavLink icon="users"        label="Grand Rounds"  onPress={() => navigation.navigate('GrandRounds')} />
+        <NavLink icon="trending-up"  label="Earnings"      onPress={() => navigation.navigate('Earnings')} borderless />
       </Card>
 
       {/* App preferences */}
@@ -162,12 +166,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               onPress={toggleMode}
               style={({ pressed }) => [styles.themeBtn, pressed && { opacity: 0.7 }]}
             >
-              <Icon
-                name={mode === 'light' ? 'sun' : 'moon'}
-                size={18}
-                color={theme.colors.textPrimary}
-                strokeWidth={1.8}
-              />
+              <Icon name={mode === 'light' ? 'sun' : 'moon'} size={18} color={theme.colors.textPrimary} strokeWidth={1.8} />
             </Pressable>
           }
         />
@@ -177,13 +176,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
       </Card>
 
       <View style={{ marginTop: theme.spacing.xl }}>
-        <Button
-          label="Sign out"
-          variant="secondary"
-          fullWidth
-          size="lg"
-          onPress={logout}
-        />
+        <Button label="Sign out" variant="secondary" fullWidth size="lg" onPress={logout} />
       </View>
     </Layout>
   );

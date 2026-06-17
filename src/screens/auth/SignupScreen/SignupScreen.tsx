@@ -29,7 +29,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({ navigation }) => {
         style={styles.kav}
       >
         <Pressable
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Tabs')}
           style={({ pressed }) => [styles.backRow, pressed && { opacity: 0.6 }]}
         >
           <Icon name="chevron-left" size={20} color={theme.colors.textPrimary} />
