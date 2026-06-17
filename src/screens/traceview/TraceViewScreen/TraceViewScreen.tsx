@@ -19,10 +19,6 @@ interface TraceViewScreenProps {
 }
 
 export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({ navigation, route }) => {
-  useEffect(() => {
-    console.log('[TraceViewScreen] mounted, params:', JSON.stringify(route?.params));
-    return () => console.log('[TraceViewScreen] UNMOUNTED');
-  }, []);
   const theme = useAppTheme();
   const styles = createTraceViewScreenStyles(theme);
   const { deviceType, width: screenWidth } = useResponsive();
@@ -53,10 +49,7 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({ navigation, ro
   const stripWidth = Math.max(220, containerW * zoom);
   const stripHeight = 130;
   const handlePickerSelect = useCallback((c: CaseReview) => {
-    navigation.getParent()?.navigate('Tabs', {
-      screen: 'TraceView',
-      params: { caseId: c.id },
-    });
+    navigation.navigate('TraceView', { caseId: c.id });
   }, [navigation]);
 
   return (
@@ -102,7 +95,7 @@ export const TraceViewScreen: React.FC<TraceViewScreenProps> = ({ navigation, ro
             {error}
           </Text>
           <Pressable
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Tabs')}
             style={{ paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.divider }}
           >
             <Text style={{ color: theme.colors.textPrimary, fontSize: 14, fontWeight: '600' }}>Go back</Text>

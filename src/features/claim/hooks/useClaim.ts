@@ -121,7 +121,9 @@ export const useClaim = (caseId?: number) => {
   const comparisonQ = useApi<import('../../../types').RecordComparisonResponse>(
     () =>
       patientId
-        ? api.patients.recordComparison(patientId)
+        ? new Promise((resolve) =>
+            setTimeout(() =>
+              api.patients.recordComparison(patientId).then(resolve), 3000))
         : Promise.resolve({ patient_code: '', count: 0, records: [] } as import('../../../types').RecordComparisonResponse),
     [patientId],
   );
@@ -262,15 +264,34 @@ export const useClaim = (caseId?: number) => {
     }
   }, [caseId, detailQ]);
 
-  // BLE predictions — poll every 30s for live MI predictions from this patient
+  // BLE predictions — matches web's refetchInterval: 30s
+  // Force-bypass cache on every patientCode change so null→real triggers a real fetch
   const patientCode = detail?.patient?.patient_code ?? null;
+  const prevPatientCodeRef = useRef<string | null>(null);
   const blePredictionsQ = useApi<import('../../../types').BLEMIPredictionListResponse>(
     () =>
       patientCode
-        ? api.ble.getPredictions(patientCode, 10)
+        ? api.ble.getPredictions(patientCode, 20)
         : Promise.resolve({ count: 0, results: [] }),
     [patientCode],
   );
+
+  // When patientCode becomes available, force-refetch to bypass 60s cache
+  useEffect(() => {
+    if (patientCode && patientCode !== prevPatientCodeRef.current) {
+      prevPatientCodeRef.current = patientCode;
+      blePredictionsQ.refetch();
+    }
+  }, [patientCode]);
+
+  // Poll every 30s for live BLE data — same as web's refetchInterval
+  useEffect(() => {
+    if (!patientCode) return;
+    const interval = setInterval(() => {
+      blePredictionsQ.refetch();
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [patientCode]);
 
   // Return
   return {

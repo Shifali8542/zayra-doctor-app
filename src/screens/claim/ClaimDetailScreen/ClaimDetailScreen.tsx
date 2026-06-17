@@ -768,7 +768,7 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({ navigation
             </View>
             {comparisonRecords.length > 0 ? (
               <ECGComparisonTable
-                records={comparisonRecords}
+                records={comparisonRecords.slice(0, 5)}
                 selectedRecordId={selectedRecordId}
                 currentRecordId={records.find((r) => r.is_current)?.id}
                 onSelectRecord={setSelectedRecordId}

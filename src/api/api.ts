@@ -1,3 +1,4 @@
+import * as SecureStore from 'expo-secure-store';
 import type {
   AIAnalysisEnvelope,
   AlynaChatResponse,
@@ -54,7 +55,7 @@ export const ENDPOINTS = {
   patientWaveformAnalysis:   (id: number) => `/patients/${id}/waveform-analysis/`,
   patientWaveformAnnotations:(id: number) => `/patients/${id}/waveform-annotations/`,
   patientRecordComparison:   (id: number) => `/patients/${id}/record-comparison/`,
-  blePredictions:            (patientCode: string) => `/patients/ble-predictions/?patient_code=${patientCode}`,
+  blePredictions: '/patients/ble-predictions/',
 
   // Cardio assessments
   aiAnalysisForPatient: (id: number) => `/assessments/patients/${id}/ai-analysis/`,
@@ -168,6 +169,39 @@ const request = async <T>(path: string, opts: RequestOptions = {}): Promise<T> =
   }
   clearTimeout(timer);
 
+ // Auto-refresh token on 401 — same as doctor web
+  if (response.status === 401 && auth && _tokens?.refresh) {
+    try {
+      const refreshRes = await fetch(buildUrl(ENDPOINTS.tokenRefresh), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ refresh: _tokens.refresh }),
+      });
+      if (refreshRes.ok) {
+        const refreshData = await refreshRes.json();
+        // Update in-memory tokens
+        const updatedTokens: AuthTokens = { ..._tokens, access: refreshData.access };
+        _tokens = updatedTokens;
+        // Persist to SecureStore so next app launch uses the new token
+        SecureStore.setItemAsync(SECURE_TOKEN_KEY, JSON.stringify(updatedTokens)).catch(() => {});
+        // Retry original request with new token
+        const retryRes = await fetch(buildUrl(path, query), {
+          method,
+          headers: {
+            ...headers,
+            Authorization: `Bearer ${refreshData.access}`,
+          },
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+        });
+        if (retryRes.ok) {
+          const retryText = await retryRes.text();
+          return (retryText ? JSON.parse(retryText) : null) as T;
+        }
+      }
+    } catch {
+      // refresh failed — fall through to 401 error
+    }
+  }
   if (rawResponse) return response as unknown as T;
 
   let payload: unknown = null;
@@ -399,10 +433,10 @@ export const assignmentsApi = {
 };
 
 export const bleApi = {
-  getPredictions: (patientCode: string, limit = 10) =>
+  getPredictions: (patientCode: string, limit = 20) =>
     request<import('../types').BLEMIPredictionListResponse>(
-      ENDPOINTS.blePredictions(patientCode),
-      { query: { limit } },
+      ENDPOINTS.blePredictions,
+      { query: { patient_code: patientCode, limit } },
     ),
 };
 

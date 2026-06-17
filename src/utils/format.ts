@@ -22,7 +22,15 @@ export const formatRelativeMinutes = (minutes: number): string => {
   return `${Math.floor(hrs / 24)}d ago`;
 };
 
-export const formatSeconds = (sec: number): string => `${sec}s`;
+export const formatSeconds = (sec: number): string => {
+  if (!sec || sec <= 0) return '—';
+  if (sec < 60) return `${Math.round(sec)}s`;
+  const mins = Math.floor(sec / 60);
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  return remMins > 0 ? `${hrs}h ${remMins}m` : `${hrs}h`;
+};
 export const formatCurrency = (val: number): string => `$${val}`;
 export const formatPct = (val: number): string => `${val}%`;
 

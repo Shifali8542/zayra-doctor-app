@@ -34,6 +34,11 @@ export const useApi = <T>(
     return () => { mountedRef.current = false; };
   }, []);
 
+  // Reset cache timestamp whenever deps change so new dep values always fetch fresh
+  useEffect(() => {
+    lastFetchAt.current = 0;
+  }, deps);
+
   const load = useCallback(async (force = false) => {
     if (!force && lastFetchAt.current > 0 && Date.now() - lastFetchAt.current < 60_000) {
       console.log('[useApi] skipping fetch — cache hit, age:', Math.round((Date.now() - lastFetchAt.current) / 1000), 's');
