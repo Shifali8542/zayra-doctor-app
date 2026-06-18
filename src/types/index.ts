@@ -853,22 +853,22 @@ export interface RecentReviewRow {
   completedAt: string; payout: number;
 }
 
-/* ── 11. Grand Rounds (mock) ─────────────────────────────────────── */
+/* ── 11. Grand Rounds (mock) */
 export interface GrandRoundsThread {
   id: string; initials: string; authorName: string; specialty: string;
   timeAgo: string; title: string; replies: number; saved: number;
 }
 
-/* ── 12. ECG Atlas (mock) ────────────────────────────────────────── */
+/* ── 12. ECG Atlas */
 export type AtlasDifficulty = 'Beginner' | 'Intermediate' | 'Advanced';
 export interface AtlasCase {
   id: string; tag: string; durationMin: number; title: string;
   difficulty: AtlasDifficulty; strokeColor: string;
 }
 
-/* ── 13. Notifications ───────────────────────────────────────────── */
+/* ── 13. Notifications */
 export interface DoctorNotification {
-  id: number; notification_type: 'mi_alert' | 'patient_online';
+  id: number; notification_type: 'mi_alert' | 'patient_online' | 'patient_offline';
   title: string; message: string; payload: Record<string, unknown>;
   is_read: boolean; created_at: string;
 }

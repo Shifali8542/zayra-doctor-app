@@ -8,15 +8,21 @@ function toWsUrl(base: string): string {
 
 interface UseBLEAlertsOptions {
   onDoctorNotification?: (n: WSDoctorNotification) => void;
+  onActivePatientChange?: (code: string | null) => void;
 }
 
 export const useBLEAlerts = (options?: UseBLEAlertsOptions) => {
-  const [alerts, setAlerts]       = useState<WSMIAlert[]>([]);
-  const [connected, setConnected] = useState(false);
-  const wsRef                     = useRef<WebSocket | null>(null);
-  const reconnectTimerRef         = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const onNotifRef                = useRef(options?.onDoctorNotification);
-  onNotifRef.current              = options?.onDoctorNotification;
+  const [alerts, setAlerts]             = useState<WSMIAlert[]>([]);
+  const [connected, setConnected]       = useState(false);
+  const [activePatientCode, setActivePatientCode] = useState<string | null>(null);
+  const wsRef                           = useRef<WebSocket | null>(null);
+  const reconnectTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activePatientTimerRef           = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onNotifRef                      = useRef(options?.onDoctorNotification);
+  const onActivePatientChangeRef        = useRef(options?.onActivePatientChange);
+  const lastNotifKeyRef                 = useRef<string | null>(null);
+  onNotifRef.current                    = options?.onDoctorNotification;
+  onActivePatientChangeRef.current      = options?.onActivePatientChange;
 
   const connect = useCallback(() => {
     const token = getAccessToken();
@@ -53,8 +59,31 @@ export const useBLEAlerts = (options?: UseBLEAlertsOptions) => {
           setAlerts((prev) => prev.filter((a) => a.alert_id !== alert_id));
         }
 
-        if (data.type === 'doctor_notification') {
-          onNotifRef.current?.(data as WSDoctorNotification);
+      if (data.type === 'doctor_notification') {
+          const notif = data as WSDoctorNotification;
+
+          // Deduplicate 
+          const timeWindow = Math.floor(Date.now() / 2000);
+          const dedupKey = notif.id
+            ? `id_${notif.id}`
+            : `${notif.notification_type}_${(notif.payload as any)?.patient_code}_${timeWindow}`;
+          if (lastNotifKeyRef.current === dedupKey) {
+            console.log('[useBLEAlerts] duplicate suppressed — type:', notif.notification_type);
+          } else {
+            lastNotifKeyRef.current = dedupKey;
+            onNotifRef.current?.(notif);
+
+            if (notif.notification_type === 'patient_online' && notif.payload?.patient_code) {
+              const code = notif.payload.patient_code as string;
+              setActivePatientCode(code);
+              onActivePatientChangeRef.current?.(code);
+            }
+
+            if (notif.notification_type === 'patient_offline') {
+              setActivePatientCode(null);
+              onActivePatientChangeRef.current?.(null);
+            }
+          }
         }
       } catch (e) {
         console.log('[useBLEAlerts] WS parse error:', e);
@@ -99,5 +128,5 @@ export const useBLEAlerts = (options?: UseBLEAlertsOptions) => {
     } catch {}
   }, []);
 
-  return { alerts, connected, dismissAlert, dismissAll, claimAlert };
+  return { alerts, connected, activePatientCode, dismissAlert, dismissAll, claimAlert };
 };

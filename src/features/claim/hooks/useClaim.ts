@@ -17,7 +17,7 @@ import type {
   WaveformResponse,
 } from '../../../types';
 
-export const useClaim = (caseId?: number) => {
+export const useClaim = (caseId?: number, activePatientCode: string | null = null) => {
   console.log('[useClaim] called with caseId:', caseId);
   const detailQ = useApi(
     () =>
@@ -264,34 +264,34 @@ export const useClaim = (caseId?: number) => {
     }
   }, [caseId, detailQ]);
 
-  // BLE predictions — matches web's refetchInterval: 30s
-  // Force-bypass cache on every patientCode change so null→real triggers a real fetch
+  // BLE predictions 
   const patientCode = detail?.patient?.patient_code ?? null;
-  const prevPatientCodeRef = useRef<string | null>(null);
+  const blePatientCode = activePatientCode !== null ? activePatientCode : patientCode;
+
+  const prevBlePatientCodeRef = useRef<string | null>(null);
   const blePredictionsQ = useApi<import('../../../types').BLEMIPredictionListResponse>(
     () =>
-      patientCode
-        ? api.ble.getPredictions(patientCode, 20)
+      blePatientCode
+        ? api.ble.getPredictions(blePatientCode, 10)
         : Promise.resolve({ count: 0, results: [] }),
-    [patientCode],
+    [blePatientCode],
   );
 
-  // When patientCode becomes available, force-refetch to bypass 60s cache
   useEffect(() => {
-    if (patientCode && patientCode !== prevPatientCodeRef.current) {
-      prevPatientCodeRef.current = patientCode;
+    if (blePatientCode && blePatientCode !== prevBlePatientCodeRef.current) {
+      prevBlePatientCodeRef.current = blePatientCode;
       blePredictionsQ.refetch();
     }
-  }, [patientCode]);
+  }, [blePatientCode]);
 
-  // Poll every 30s for live BLE data — same as web's refetchInterval
+  // Poll every 8s when blePatientCode is available
   useEffect(() => {
-    if (!patientCode) return;
+    if (!blePatientCode) return;
     const interval = setInterval(() => {
       blePredictionsQ.refetch();
-    }, 30_000);
+    }, 8_000);
     return () => clearInterval(interval);
-  }, [patientCode]);
+  }, [blePatientCode]);
 
   // Return
   return {

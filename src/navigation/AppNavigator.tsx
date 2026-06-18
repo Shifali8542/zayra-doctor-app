@@ -57,6 +57,7 @@ const TabsNavigator: React.FC<TabsNavigatorProps> = ({ unreadCount = 0, onBellPr
 
 export const AppNavigator: React.FC = () => {
   const [showNotifPanel, setShowNotifPanel] = React.useState(false);
+  const [activePatientCode, setActivePatientCode] = React.useState<string | null>(null);
 
   const {
     notifications, unreadCount, loading: notifLoading,
@@ -65,6 +66,7 @@ export const AppNavigator: React.FC = () => {
 
   const { alerts, dismissAlert, claimAlert } = useBLEAlerts({
     onDoctorNotification: handleWsNotification,
+    onActivePatientChange: setActivePatientCode,
   });
 
   return (
@@ -94,6 +96,7 @@ export const AppNavigator: React.FC = () => {
               {...props}
               unreadCount={unreadCount}
               onBellPress={() => { fetchList(); setShowNotifPanel(true); }}
+              activePatientCode={activePatientCode}
             />
           )}
         />

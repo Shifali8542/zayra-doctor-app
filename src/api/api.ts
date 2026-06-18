@@ -169,7 +169,7 @@ const request = async <T>(path: string, opts: RequestOptions = {}): Promise<T> =
   }
   clearTimeout(timer);
 
- // Auto-refresh token on 401 — same as doctor web
+ // Auto-refresh token on 401 
   if (response.status === 401 && auth && _tokens?.refresh) {
     try {
       const refreshRes = await fetch(buildUrl(ENDPOINTS.tokenRefresh), {
@@ -179,12 +179,9 @@ const request = async <T>(path: string, opts: RequestOptions = {}): Promise<T> =
       });
       if (refreshRes.ok) {
         const refreshData = await refreshRes.json();
-        // Update in-memory tokens
         const updatedTokens: AuthTokens = { ..._tokens, access: refreshData.access };
         _tokens = updatedTokens;
-        // Persist to SecureStore so next app launch uses the new token
         SecureStore.setItemAsync(SECURE_TOKEN_KEY, JSON.stringify(updatedTokens)).catch(() => {});
-        // Retry original request with new token
         const retryRes = await fetch(buildUrl(path, query), {
           method,
           headers: {
@@ -199,7 +196,6 @@ const request = async <T>(path: string, opts: RequestOptions = {}): Promise<T> =
         }
       }
     } catch {
-      // refresh failed — fall through to 401 error
     }
   }
   if (rawResponse) return response as unknown as T;
@@ -433,7 +429,7 @@ export const assignmentsApi = {
 };
 
 export const bleApi = {
-  getPredictions: (patientCode: string, limit = 20) =>
+  getPredictions: (patientCode: string, limit = 10) =>
     request<import('../types').BLEMIPredictionListResponse>(
       ENDPOINTS.blePredictions,
       { query: { patient_code: patientCode, limit } },

@@ -22,6 +22,7 @@ interface ClaimDetailScreenProps {
   route: any;
   unreadCount?: number;
   onBellPress?: () => void;
+  activePatientCode?: string | null;
 }
 
 const Row: React.FC<{ label: string; value: string; last?: boolean }> = ({
@@ -129,7 +130,7 @@ const DeltaChip: React.FC<{
   );
 };
 
-// ── ST badge colour helper ─────────────────────────────────────────────────────
+// ST badge colour helper
 const stColor = (status: string | null, theme: any) => {
   if (!status) return theme.colors.surface;
   if (status.includes('STEMI') || status.includes('Critical')) return 'rgba(239,68,68,0.15)';
@@ -145,7 +146,7 @@ const stTextColor = (status: string | null, theme: any) => {
   return theme.colors.textSecondary;
 };
 
-// ── AI risk dot colour ────────────────────────────────────────────────────────
+// AI risk dot colour
 const aiRiskColor = (level: string | null, theme: any) => {
   if (level === 'Critical') return theme.colors.danger;
   if (level === 'High') return '#F59E0B';
@@ -154,7 +155,7 @@ const aiRiskColor = (level: string | null, theme: any) => {
   return theme.colors.textTertiary;
 };
 
-// ── ECG Comparison — true horizontal table (rows = metrics, columns = ECG records) ──
+// ECG Comparison
 import { ScrollView } from 'react-native';
 
 type ECGRec = import('../../../types').ECGRecordComparison;
@@ -184,7 +185,7 @@ const ECGComparisonTable: React.FC<{
   const COL_LABEL = 88;
   const COL_DATA = 96;
 
-  // ── cell renderers ────────────────────────────────────────────────────────
+  // cell renderers 
   const HeaderCell = ({ rec, idx }: { rec: ECGRec; idx: number }) => {
     const active = isActive(rec);
     const d = rec.delta_vs_previous;
@@ -222,7 +223,7 @@ const ECGComparisonTable: React.FC<{
     );
   };
 
-  /** Renders a single metric value + optional delta below it */
+  /** Renders a single metric value  */
   const MetricCell = ({
     rec, idx, getValue, higherIsBad = true,
   }: {
@@ -272,7 +273,7 @@ const ECGComparisonTable: React.FC<{
       <View style={[styles.cmpLabelCell, { width: COL_LABEL }]}>
         <Text style={styles.cmpLabel}>{label}</Text>
       </View>
-      {/* Scrollable data — same ScrollView ref so they scroll together */}
+      {/* Scrollable data */}
       {records.map((rec, idx) => (
         <React.Fragment key={rec.id}>
           {renderCell(rec, idx)}
@@ -285,7 +286,7 @@ const ECGComparisonTable: React.FC<{
     <View style={styles.cmpOuter}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View>
-          {/* ── Sticky header row ── */}
+          {/* Sticky header row */}
           <View style={styles.cmpHeaderRow}>
             {/* Empty corner cell */}
             <View style={[styles.cmpCornerCell, { width: COL_LABEL }]}>
@@ -296,7 +297,7 @@ const ECGComparisonTable: React.FC<{
             ))}
           </View>
 
-          {/* ── Data rows ── */}
+          {/* Data rows */}
           <TableRow
             label="Rhythm"
             renderCell={(rec, idx) => (
@@ -414,7 +415,7 @@ const ECGComparisonTable: React.FC<{
   );
 };
 
-export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({ navigation, route, unreadCount = 0, onBellPress }) => {
+export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({ navigation, route, unreadCount = 0, onBellPress, activePatientCode = null }) => {
   const theme = useAppTheme();
   const styles = createClaimDetailScreenStyles(theme);
   const caseId: number | undefined = route?.params?.caseId ?? route?.params?.patientId;
@@ -427,7 +428,7 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({ navigation
     primarySamples, waveformLoading, effectiveSamplingRate, waveformGrid,
     claimCase, completeCase, escalateCase, isActioning, actionError, blePredictions, blePredictionsLoading,
     caseStatus, caseCreatedAt,
-  } = useClaim(caseId);
+  } = useClaim(caseId, activePatientCode);
 
   const patientId = caseItem?.patientId;
   const isClaimed = caseStatus === 'claimed';
@@ -751,7 +752,7 @@ export const ClaimDetailScreen: React.FC<ClaimDetailScreenProps> = ({ navigation
             )}
           </Card>
 
-          {/* ── ECG history comparison table ── */}
+          {/* ECG history comparison table */}
           <Card style={styles.section}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.xs }}>
               <View style={{ flex: 1 }}>

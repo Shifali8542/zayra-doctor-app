@@ -57,8 +57,11 @@ export const useNotifications = () => {
     setNotifications((prev) => [newNotif, ...prev].slice(0, 20));
     setUnreadCount(n.unread_count);
 
-    if (n.notification_type === 'patient_online' && n.payload?.patient_code) {
+   if (n.notification_type === 'patient_online' && n.payload?.patient_code) {
       setActivePatientCode(n.payload.patient_code as string);
+    }
+    if (n.notification_type === 'patient_offline') {
+      setActivePatientCode(null);
     }
   }, []);
 
